@@ -153,7 +153,7 @@ namespace Server.Gumps
                     {
                         return;
                     }
-                    else if (!Guilds.Guild.NewGuildSystem && m_House.FindGuildstone() != null)
+                    else if (m_House.FindGuildstone() != null)
                     {
                         from.SendLocalizedMessage(501389); // You cannot redeed a house with a guildstone inside.
                         return;
@@ -662,7 +662,7 @@ public class HouseGump : Gump
                 {
                     if (isOwner)
                     {
-                        if (!Guilds.Guild.NewGuildSystem && m_House.FindGuildstone() != null)
+                        if (m_House.FindGuildstone() != null)
                         {
                             from.SendLocalizedMessage(501389); // You cannot redeed a house with a guildstone inside.
                         }

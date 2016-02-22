@@ -2234,44 +2234,6 @@ namespace Server.Mobiles
 			return base.MutateSpeech( hears, ref text, ref context );
 		}
 
-		public override void DoSpeech( string text, int[] keywords, MessageType type, int hue )
-		{
-			if( Guilds.Guild.NewGuildSystem && (type == MessageType.Guild || type == MessageType.Alliance) )
-			{
-				Guilds.Guild g = this.Guild as Guilds.Guild;
-				if( g == null )
-				{
-					SendLocalizedMessage( 1063142 ); // You are not in a guild!
-				}
-				else if( type == MessageType.Alliance )
-				{
-					if( g.Alliance != null && g.Alliance.IsMember( g ) )
-					{
-						//g.Alliance.AllianceTextMessage( hue, "[Alliance][{0}]: {1}", this.Name, text );
-						g.Alliance.AllianceChat( this, text );
-						SendToStaffMessage( this, "[Alliance]: {0}", text );
-
-						m_AllianceMessageHue = hue;
-					}
-					else
-					{
-						SendLocalizedMessage( 1071020 ); // You are not in an alliance!
-					}
-				}
-				else	//Type == MessageType.Guild
-				{
-					m_GuildMessageHue = hue;
-
-					g.GuildChat( this, text );
-					SendToStaffMessage( this, "[Guild]: {0}", text );
-				}
-			}
-			else
-			{
-				base.DoSpeech( text, keywords, type, hue );
-			}
-		}
-
 		private static void SendToStaffMessage( Mobile from, string text )
 		{
 			Packet p = null;
@@ -2741,8 +2703,6 @@ namespace Server.Mobiles
 
 			DisguiseTimers.RemoveTimer( this );
 		}
-
-		public override bool NewGuildDisplay { get { return Server.Guilds.Guild.NewGuildSystem; } }
 
 		private bool m_BedrollLogout;
 
