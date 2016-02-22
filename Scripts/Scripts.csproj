@@ -336,7 +336,6 @@
     <Compile Include="Multis\Camps\EvilMageCamp.cs" />
     <Compile Include="Multis\Houses\HouseGump.cs" />
     <Compile Include=".\Gumps\NoticeGump.cs" />
-    <Compile Include=".\Gumps\PetResurrectGump.cs" />
     <Compile Include=".\Gumps\PlayerVendorGumps.cs" />
     <Compile Include=".\Gumps\PolymorphGump.cs" />
     <Compile Include=".\Gumps\Properties\PropsConfig.cs" />
@@ -352,7 +351,6 @@
     <Compile Include=".\Gumps\Properties\SetTimeSpanGump.cs" />
     <Compile Include=".\Gumps\ReportMurderer.cs" />
     <Compile Include=".\Gumps\ResurrectGump.cs" />
-    <Compile Include=".\Gumps\RewardGump.cs" />
     <Compile Include=".\Gumps\RunebookGump.cs" />
     <Compile Include=".\Gumps\SkillsGump.cs" />
     <Compile Include=".\Gumps\TithingGump.cs" />

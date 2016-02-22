@@ -535,23 +535,6 @@ namespace Server.Mobiles
 			EventSink.Disconnected += new DisconnectedEventHandler( EventSink_Disconnected );
 		}
 
-		private static void CheckPets()
-		{
-			foreach( Mobile m in World.Mobiles.Values )
-			{
-				if( m is PlayerMobile )
-				{
-					PlayerMobile pm = (PlayerMobile)m;
-
-					if((( !pm.Mounted || ( pm.Mount != null && pm.Mount is EtherealMount )) && ( pm.AllFollowers.Count > pm.AutoStabled.Count )) ||
-						( pm.Mounted && ( pm.AllFollowers.Count  > ( pm.AutoStabled.Count +1 ))))
-					{
-						pm.AutoStablePets(); /* autostable checks summons, et al: no need here */
-					}
-				}
-			}
-		}
-
 		private MountBlock m_MountBlock;
 
 		public BlockMountType MountBlockReason
@@ -677,9 +660,6 @@ namespace Server.Mobiles
 				from.SendGump( new NoticeGump( 1060637, 30720, notice, 0xFFC000, 300, 140, null, null ) );
 				return;
 			}
-
-			if( from is PlayerMobile )
-				((PlayerMobile)from).ClaimAutoStabledPets();
 		}
 
 		private bool m_NoDeltaRecursion;
@@ -874,8 +854,6 @@ namespace Server.Mobiles
 
 		private static void OnLogout( LogoutEventArgs e )
 		{
-			if( e.Mobile is PlayerMobile )
-				((PlayerMobile)e.Mobile).AutoStablePets();
 		}
 
 		private static void EventSink_Connected( ConnectedEventArgs e )
@@ -2525,14 +2503,5 @@ namespace Server.Mobiles
 		}
 
 		#endregion
-
-		public void AutoStablePets()
-		{
-		}
-
-		public void ClaimAutoStabledPets()
-		{
-			return;
-		}
 	}
 }
