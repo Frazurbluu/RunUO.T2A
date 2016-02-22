@@ -270,8 +270,7 @@ namespace Server.Items
 				}
 				else
 				{
-					bool young = mobile is PlayerMobile ? ((PlayerMobile)mobile).Young : false;
-					checkLists = young ? PMList.UORListsYoung : PMList.UORLists;
+					checkLists = PMList.UORLists;
 				}
 			}
 			else

@@ -19,7 +19,6 @@ using Server.Engines.Craft;
 
 namespace Server.Mobiles
 {
-	#region Enums
 	[Flags]
 	public enum PlayerFlag // First 16 bits are reserved for default-distro use, start custom flags at 0x00010000
 	{
@@ -66,8 +65,6 @@ namespace Server.Mobiles
 		DismountRecovery = 1070859
 	}
 
-	#endregion
-
 	public partial class PlayerMobile : Mobile
 	{
 		private class CountAndTimeStamp
@@ -110,8 +107,6 @@ namespace Server.Mobiles
 		private List<Mobile> m_AutoStabled;
 		private List<Mobile> m_AllFollowers;
 		private List<Mobile> m_RecentlyReported;
-
-		#region Getters & Setters
 
 		public List<Mobile> RecentlyReported
 		{
@@ -264,9 +259,7 @@ namespace Server.Mobiles
 			get { return m_ExecutesLightningStrike; }
 			set { m_ExecutesLightningStrike = value; }
 		}
-		#endregion
 
-		#region PlayerFlags
 		public PlayerFlag Flags
 		{
 			get{ return m_Flags; }
@@ -363,9 +356,7 @@ namespace Server.Mobiles
 			get{ return GetFlag( PlayerFlag.RefuseTrades ); }
 			set{ SetFlag( PlayerFlag.RefuseTrades, value ); }
 		}
-		#endregion
 
-		#region Auto Arrow Recovery
 		private Dictionary<Type, int> m_RecoverableAmmo = new Dictionary<Type,int>();
 
 		public Dictionary<Type, int> RecoverableAmmo
@@ -376,8 +367,6 @@ namespace Server.Mobiles
 		public void RecoverAmmo()
 		{
 		}
-
-		#endregion
 
 		private DateTime m_AnkhNextUse;
 
@@ -403,7 +392,6 @@ namespace Server.Mobiles
 			set { m_PeacedUntil = value; }
 		}
 
-		#region Scroll of Alacrity
 		private DateTime m_AcceleratedStart;
 
 		[CommandProperty(AccessLevel.GameMaster)]
@@ -421,7 +409,6 @@ namespace Server.Mobiles
 			get { return m_AcceleratedSkill; }
 			set { m_AcceleratedSkill = value; }
 		}
-		#endregion
 
 		public static Direction GetDirection4( Point3D from, Point3D to )
 		{
@@ -1047,7 +1034,6 @@ namespace Server.Mobiles
 				rating += bc.ArmorRatingScaled;
 		}
 
-		#region [Stats]Max
 		[CommandProperty( AccessLevel.GameMaster )]
 		public override int HitsMax
 		{
@@ -1061,9 +1047,6 @@ namespace Server.Mobiles
 				return (strBase / 2) + 50 + strOffs;
 			}
 		}
-		#endregion
-
-		#region Stat Getters/Setters
 
 		[CommandProperty( AccessLevel.GameMaster )]
 		public override int Str
@@ -1103,8 +1086,6 @@ namespace Server.Mobiles
 				base.Dex = value;
 			}
 		}
-
-		#endregion
 
 		public override bool Move( Direction d )
 		{
@@ -1481,12 +1462,7 @@ namespace Server.Mobiles
 			if ( item.QuestItem )
 				item.QuestItem = false;
 
-			DeathMoveResult res = base.GetParentMoveResultFor( item );
-
-			if ( res == DeathMoveResult.MoveToCorpse && item.Movable && this.Young )
-				res = DeathMoveResult.MoveToBackpack;
-
-			return res;
+			return GetParentMoveResultFor(item);
 		}
 
 		public override DeathMoveResult GetInventoryMoveResultFor( Item item )
@@ -1495,12 +1471,7 @@ namespace Server.Mobiles
 			if ( item.QuestItem )
 				item.QuestItem = false;
 
-			DeathMoveResult res = base.GetInventoryMoveResultFor( item );
-
-			if ( res == DeathMoveResult.MoveToCorpse && item.Movable && this.Young )
-				res = DeathMoveResult.MoveToBackpack;
-
-			return res;
+			return GetInventoryMoveResultFor(item);
 		}
 
 		public override void OnDeath( Container c )
@@ -1544,12 +1515,6 @@ namespace Server.Mobiles
 				Mobile master = bc.GetMaster();
 				if( master != null )
 					killer = master;
-			}
-
-			if ( this.Young )
-			{
-				if ( YoungDeathTeleport() )
-					Timer.DelayCall( TimeSpan.FromSeconds( 2.5 ), new TimerCallback( SendYoungDeathNotice ) );
 			}
 
 			Server.Guilds.Guild.HandleDeath( this, killer );
@@ -1714,8 +1679,6 @@ namespace Server.Mobiles
 			SendToStaffMessage( from, String.Format( format, args ) );
 		}
 
-		#region Poison
-
 		public override ApplyPoisonResult ApplyPoison( Mobile from, Poison poison )
 		{
 			if ( !Alive )
@@ -1728,8 +1691,6 @@ namespace Server.Mobiles
 
 			return result;
 		}
-
-		#endregion
 
 		public PlayerMobile( Serial s ) : base( s )
 		{
@@ -2182,8 +2143,16 @@ namespace Server.Mobiles
 			}
 		}
 
-		#region MyRunUO Invalidation
-		private bool m_ChangedMyRunUO;
+        public override TimeSpan GetLogoutDelay()
+        {
+            if (BedrollLogout || TestCenter.Enabled)
+                return TimeSpan.Zero;
+
+            return base.GetLogoutDelay();
+        }
+
+        #region MyRunUO Invalidation
+        private bool m_ChangedMyRunUO;
 
 		public bool ChangedMyRunUO
 		{
@@ -2198,19 +2167,6 @@ namespace Server.Mobiles
 				m_ChangedMyRunUO = true;
 				Engines.MyRunUO.MyRunUO.QueueMobileUpdate( this );
 			}
-		}
-
-		public override void OnKillsChange( int oldValue )
-		{
-			if ( this.Young && this.Kills > oldValue )
-			{
-				Account acc = this.Account as Account;
-
-				if ( acc != null )
-					acc.RemoveYoungStatus( 0 );
-			}
-
-			InvalidateMyRunUO();
 		}
 
 		public override void OnGenderChanged( bool oldFemale )
@@ -2235,19 +2191,6 @@ namespace Server.Mobiles
 
 		public override void OnFameChange( int oldValue )
 		{
-			InvalidateMyRunUO();
-		}
-
-		public override void OnSkillChange( SkillName skill, double oldBase )
-		{
-			if ( this.Young && this.SkillsTotal >= 4500 )
-			{
-				Account acc = this.Account as Account;
-
-				if ( acc != null )
-					acc.RemoveYoungStatus( 1019036 ); // You have successfully obtained a respectable skill level, and have outgrown your status as a young player!
-			}
-
 			InvalidateMyRunUO();
 		}
 
@@ -2435,100 +2378,6 @@ namespace Server.Mobiles
 				storeHue = hair ? HairHue : FacialHairHue;
 			}
 			CreateHair( hair, id, 0 );
-		}
-
-		#endregion
-
-		#region Young system
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool Young
-		{
-			get{ return GetFlag( PlayerFlag.Young ); }
-			set{ SetFlag( PlayerFlag.Young, value ); InvalidateProperties(); }
-		}
-
-		public override string ApplyNameSuffix( string suffix )
-		{
-			if ( Young )
-			{
-				if ( suffix.Length == 0 )
-					suffix = "(Young)";
-				else
-					suffix = String.Concat( suffix, " (Young)" );
-			}
-
-			return base.ApplyNameSuffix( suffix );
-		}
-
-		public override TimeSpan GetLogoutDelay()
-		{
-			if ( Young || BedrollLogout || TestCenter.Enabled )
-				return TimeSpan.Zero;
-
-			return base.GetLogoutDelay();
-		}
-
-		private DateTime m_LastYoungMessage = DateTime.MinValue;
-
-		public bool CheckYoungProtection( Mobile from )
-		{
-			if ( !this.Young )
-				return false;
-
-			if ( Region is BaseRegion && !((BaseRegion)Region).YoungProtected )
-				return false;
-
-			if( from is BaseCreature && ((BaseCreature)from).IgnoreYoungProtection )
-				return false;
-
-			if ( DateTime.Now - m_LastYoungMessage > TimeSpan.FromMinutes( 1.0 ) )
-			{
-				m_LastYoungMessage = DateTime.Now;
-				SendLocalizedMessage( 1019067 ); // A monster looks at you menacingly but does not attack.  You would be under attack now if not for your status as a new citizen of Britannia.
-			}
-
-			return true;
-		}
-
-		private DateTime m_LastYoungHeal = DateTime.MinValue;
-
-		public bool CheckYoungHealTime()
-		{
-			if ( DateTime.Now - m_LastYoungHeal > TimeSpan.FromMinutes( 5.0 ) )
-			{
-				m_LastYoungHeal = DateTime.Now;
-				return true;
-			}
-
-			return false;
-		}
-
-		public bool YoungDeathTeleport()
-		{
-			if ( this.Region.IsPartOf( typeof( Jail ) ) )
-				return false;
-
-			Point3D loc;
-			Map map;
-
-			DungeonRegion dungeon = (DungeonRegion) this.Region.GetRegion( typeof( DungeonRegion ) );
-			if ( dungeon != null && dungeon.EntranceLocation != Point3D.Zero )
-			{
-				loc = dungeon.EntranceLocation;
-				map = dungeon.EntranceMap;
-			}
-			else
-			{
-				loc = this.Location;
-				map = this.Map;
-			}
-
-			return false;
-		}
-
-		private void SendYoungDeathNotice()
-		{
-			this.SendGump( new YoungDeathNotice() );
 		}
 
 		#endregion

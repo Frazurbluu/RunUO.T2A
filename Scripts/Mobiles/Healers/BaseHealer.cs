@@ -65,8 +65,6 @@ namespace Server.Mobiles
 			AddItem( new Robe( GetRobeColor() ) );
 		}
 
-		public virtual bool HealsYoungPlayers{ get{ return true; } }
-
 		public virtual bool CheckResurrect( Mobile m )
 		{
 			return true;
@@ -86,25 +84,6 @@ namespace Server.Mobiles
 			m.SendGump( new ResurrectGump( m, ResurrectMessage.Healer ) );
 		}
 
-		public virtual void OfferHeal( PlayerMobile m )
-		{
-			Direction = GetDirectionTo( m );
-
-			if ( m.CheckYoungHealTime() )
-			{
-				Say( 501229 ); // You look like you need some healing my child.
-
-				m.PlaySound( 0x1F2 );
-				m.FixedEffect( 0x376A, 9, 32 );
-
-				m.Hits = m.HitsMax;
-			}
-			else
-			{
-				Say( 501228 ); // I can do no more for you at this time.
-			}
-		}
-
 		public override void OnMovement( Mobile m, Point3D oldLocation )
 		{
 			if ( !m.Frozen && DateTime.Now >= m_NextResurrect && InRange( m, 4 ) && !InRange( oldLocation, 4 ) && InLOS( m ) )
@@ -121,10 +100,6 @@ namespace Server.Mobiles
 					{
 						OfferResurrection( m );
 					}
-				}
-				else if ( this.HealsYoungPlayers && m.Hits < m.HitsMax && m is PlayerMobile && ((PlayerMobile)m).Young )
-				{
-					OfferHeal( (PlayerMobile) m );
 				}
 			}
 		}

@@ -70,9 +70,6 @@ namespace Server.Misc
 			if( target is BaseCreature && !((BaseCreature)target).Controlled )
 				return false; // Players cannot heal uncontrolled mobiles
 
-			if( from is PlayerMobile && ((PlayerMobile)from).Young && (!(target is PlayerMobile) || !((PlayerMobile)target).Young) )
-				return false; // Young players cannot perform beneficial actions towards older players
-
 			Guild fromGuild = from.Guild as Guild;
 			Guild targetGuild = target.Guild as Guild;
 
@@ -96,10 +93,7 @@ namespace Server.Misc
 
 			if( !from.Player && !(bc != null && bc.GetMaster() != null && bc.GetMaster().AccessLevel == AccessLevel.Player ) )
 			{
-				if( !CheckAggressor( from.Aggressors, target ) && !CheckAggressed( from.Aggressed, target ) && target is PlayerMobile && ((PlayerMobile)target).CheckYoungProtection( from ) )
-					return false;
-
-				return true; // Uncontrolled NPCs are only restricted by the young system
+				return true;
 			}
 
 			Guild fromGuild = GetGuildFor( from.Guild as Guild, from );

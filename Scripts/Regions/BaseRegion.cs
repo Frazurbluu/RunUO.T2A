@@ -123,17 +123,6 @@ namespace Server.Regions
 			return false;
 		}
 
-		public override void OnEnter(Mobile m)
-		{
-			if (m is PlayerMobile && ((PlayerMobile)m).Young)
-			{
-				if(!this.YoungProtected)
-				{
-					m.SendGump(new YoungDungeonWarning());
-				}
-			}
-		}
-
 		public override bool AcceptsSpawnsFrom( Region region )
 		{
 			if ( region == this || !m_ExcludeFromParentSpawns )

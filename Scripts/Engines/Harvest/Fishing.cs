@@ -184,13 +184,7 @@ namespace Server.Engines.Harvest
 		{
 			if ( type == typeof( TreasureMap ) )
 			{
-				int level;
-				if ( from is PlayerMobile && ((PlayerMobile)from).Young )
-					level = 0;
-				else
-					level = 1;
-
-				return new TreasureMap( level, Map.Felucca );
+				return new TreasureMap( 1, Map.Felucca );
 			}
 			else if ( type == typeof( MessageInABottle ) )
 			{

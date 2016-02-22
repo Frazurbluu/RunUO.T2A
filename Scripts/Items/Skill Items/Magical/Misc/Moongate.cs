@@ -113,11 +113,7 @@ namespace Server.Items
 		{
 			ClientFlags flags = m.NetState == null ? ClientFlags.None : m.NetState.Flags;
 
-			if ( m_TargetMap == Map.Felucca && m is PlayerMobile && ((PlayerMobile)m).Young )
-			{
-				m.SendLocalizedMessage( 1049543 ); // You decide against traveling to Felucca while you are still young.
-			}
-			else if ( (m.Kills >= 5 && m_TargetMap != Map.Felucca) )
+			if ( (m.Kills >= 5 && m_TargetMap != Map.Felucca) )
 			{
 				m.SendLocalizedMessage( 1019004 ); // You are not allowed to travel there.
 			}

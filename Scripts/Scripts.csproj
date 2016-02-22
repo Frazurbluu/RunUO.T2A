@@ -360,7 +360,6 @@
     <Compile Include=".\Gumps\ViewHousesGump.cs" />
     <Compile Include=".\Gumps\WarningGump.cs" />
     <Compile Include=".\Gumps\WhoGump.cs" />
-    <Compile Include=".\Gumps\YoungGumps.cs" />
     <Compile Include=".\Items\Armor\ArmorEnums.cs" />
     <Compile Include=".\Items\Armor\BaseArmor.cs" />
     <Compile Include=".\Items\Armor\Bone\BoneArms.cs" />
