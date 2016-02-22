@@ -1415,10 +1415,10 @@ namespace Server.Items
 				new FillableEntry( 2, typeof( Axle ) ),
 				new FillableEntry( 2, typeof( Springs ) ),
 				new FillableEntry( 5, typeof( TinkerTools ) ),
-				new FillableEntry( 4, typeof( Key ) ),
-				new FillableEntry( 1, typeof( DecoArrowShafts )),
-				new FillableEntry( 1, typeof( Lockpicks )),
-				new FillableEntry( 1, typeof( ToolKit ))
+				new FillableEntry( 4, typeof( Key ) )
+				//new FillableEntry( 1, typeof( DecoArrowShafts )),
+				//new FillableEntry( 1, typeof( Lockpicks )),
+				//new FillableEntry( 1, typeof( ToolKit ))
 			} );
 
 		public static FillableContent Veterinarian = new FillableContent(

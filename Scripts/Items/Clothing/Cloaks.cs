@@ -1,5 +1,4 @@
 using System;
-using Server.Engines.VeteranRewards;
 
 namespace Server.Items
 {
@@ -156,17 +155,9 @@ namespace Server.Items
 	}
 
 	[Flipable]
-	public class RewardCloak : BaseCloak, IRewardItem
+	public class RewardCloak : BaseCloak
 	{
 		private int m_LabelNumber;
-		private bool m_IsRewardItem;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool IsRewardItem
-		{
-			get{ return m_IsRewardItem; }
-			set{ m_IsRewardItem = value; }
-		}
 
 		[CommandProperty( AccessLevel.GameMaster )]
 		public int Number
@@ -208,14 +199,6 @@ namespace Server.Items
 			return false;
 		}
 
-		public override bool CanEquip( Mobile m )
-		{
-			if ( !base.CanEquip( m ) )
-				return false;
-
-			return !m_IsRewardItem || Engines.VeteranRewards.RewardSystem.CheckIsUsableBy( m, this, new object[]{ Hue, m_LabelNumber } );
-		}
-
 		[Constructable]
 		public RewardCloak() : this( 0 )
 		{
@@ -246,7 +229,6 @@ namespace Server.Items
 			writer.Write( (int) 0 ); // version
 
 			writer.Write( (int) m_LabelNumber );
-			writer.Write( (bool) m_IsRewardItem );
 		}
 
 		public override void Deserialize( GenericReader reader )
@@ -260,7 +242,6 @@ namespace Server.Items
 				case 0:
 				{
 					m_LabelNumber = reader.ReadInt();
-					m_IsRewardItem = reader.ReadBool();
 					break;
 				}
 			}

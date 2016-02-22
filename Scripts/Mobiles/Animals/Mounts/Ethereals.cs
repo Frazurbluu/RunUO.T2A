@@ -1,11 +1,10 @@
 using System;
 using Server.Items;
 using Server.Spells;
-using Server.Engines.VeteranRewards;
 
 namespace Server.Mobiles
 {
-    public class EtherealMount : Item, IMount, IMountItem, Engines.VeteranRewards.IRewardItem
+    public class EtherealMount : Item, IMount, IMountItem
 	{
 		private int m_MountedID;
 		private int m_RegularID;
@@ -123,11 +122,6 @@ namespace Server.Mobiles
 			if( Parent == null )
 			{
 				from.SayTo( from, 1010095 ); // This must be on your person to use.
-				return false;
-			}
-			else if( m_IsRewardItem && !RewardSystem.CheckIsUsableBy( from, this, null ) )
-			{
-				// CheckIsUsableBy sends the message
 				return false;
 			}
 			else if( !BaseMount.CheckMountAllowed( from ) )
@@ -373,7 +367,7 @@ namespace Server.Mobiles
 			{
 				get
 				{
-					return TimeSpan.FromSeconds( ( ( m_Mount.IsDonationItem && RewardSystem.GetRewardLevel( m_Rider ) < 3 ) ? 9.5 : 2.0 ) );
+					return TimeSpan.FromSeconds( 2.0 );
 				}
 			}
 

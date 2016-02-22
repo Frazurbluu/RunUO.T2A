@@ -1,7 +1,6 @@
 using Server.Multis;
 using Server.Gumps;
 using Server.Network;
-using Server.Engines.VeteranRewards;
 
 namespace Server.Items
 {
@@ -128,7 +127,7 @@ namespace Server.Items
 		}
 	}
 
-	public class MonsterStatuette : Item, IRewardItem
+	public class MonsterStatuette : Item
 	{
 		private MonsterStatuetteType m_Type;
 		private bool m_TurnedOn;

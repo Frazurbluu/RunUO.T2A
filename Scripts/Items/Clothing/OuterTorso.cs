@@ -1,5 +1,4 @@
 using System;
-using Server.Engines.VeteranRewards;
 
 namespace Server.Items
 {
@@ -201,7 +200,7 @@ namespace Server.Items
 	}
 
 	[Flipable]
-	public class RewardRobe : BaseOuterTorso, IRewardItem
+	public class RewardRobe : BaseOuterTorso
 	{
 		private int m_LabelNumber;
 		private bool m_IsRewardItem;
@@ -258,7 +257,7 @@ namespace Server.Items
 			if ( !base.CanEquip( m ) )
 				return false;
 
-			return !m_IsRewardItem || RewardSystem.CheckIsUsableBy( m, this, new object[]{ Hue, m_LabelNumber } );
+			return !m_IsRewardItem;
 		}
 
 		[Constructable]
@@ -316,17 +315,9 @@ namespace Server.Items
 	}
 
 	[Flipable]
-	public class RewardDress : BaseOuterTorso, IRewardItem
+	public class RewardDress : BaseOuterTorso
 	{
 		private int m_LabelNumber;
-		private bool m_IsRewardItem;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool IsRewardItem
-		{
-			get{ return m_IsRewardItem; }
-			set{ m_IsRewardItem = value; }
-		}
 
 		[CommandProperty( AccessLevel.GameMaster )]
 		public int Number
@@ -368,22 +359,6 @@ namespace Server.Items
 			return false;
 		}
 
-		public override void GetProperties( ObjectPropertyList list )
-		{
-			base.GetProperties( list );
-
-			if ( m_IsRewardItem )
-				list.Add( RewardSystem.GetRewardYearLabel( this, new object[]{ Hue, m_LabelNumber } ) ); // X Year Veteran Reward
-		}
-
-		public override bool CanEquip( Mobile m )
-		{
-			if ( !base.CanEquip( m ) )
-				return false;
-
-			return !m_IsRewardItem || RewardSystem.CheckIsUsableBy( m, this, new object[]{ Hue, m_LabelNumber } );
-		}
-
 		[Constructable]
 		public RewardDress() : this( 0 )
 		{
@@ -414,7 +389,6 @@ namespace Server.Items
 			writer.Write( (int) 0 ); // version
 
 			writer.Write( (int) m_LabelNumber );
-			writer.Write( (bool) m_IsRewardItem );
 		}
 
 		public override void Deserialize( GenericReader reader )
@@ -428,7 +402,6 @@ namespace Server.Items
 				case 0:
 				{
 					m_LabelNumber = reader.ReadInt();
-					m_IsRewardItem = reader.ReadBool();
 					break;
 				}
 			}

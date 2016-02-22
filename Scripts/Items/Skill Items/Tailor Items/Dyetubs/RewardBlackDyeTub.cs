@@ -1,6 +1,6 @@
 namespace Server.Items
 {
-    public class RewardBlackDyeTub : DyeTub, Engines.VeteranRewards.IRewardItem
+    public class RewardBlackDyeTub : DyeTub
 	{
 		public override int LabelNumber{ get{ return 1006008; } } // Black Dye Tub
 
@@ -19,14 +19,6 @@ namespace Server.Items
 			Hue = DyedHue = 0x0001;
 			Redyable = false;
 			LootType = LootType.Blessed;
-		}
-
-		public override void OnDoubleClick( Mobile from )
-		{
-			if ( m_IsRewardItem && !Engines.VeteranRewards.RewardSystem.CheckIsUsableBy( from, this, null ) )
-				return;
-
-			base.OnDoubleClick( from );
 		}
 
 		public RewardBlackDyeTub( Serial serial ) : base( serial )

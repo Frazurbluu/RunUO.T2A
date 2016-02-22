@@ -265,14 +265,6 @@ namespace Server.Mobiles
 			get { return m_ExecutesLightningStrike; }
 			set { m_ExecutesLightningStrike = value; }
 		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int ToothAche
-		{
-			get { return CandyCane.GetToothAche( this ); }
-			set { CandyCane.SetToothAche( this, value ); }
-		}
-
 		#endregion
 
 		#region PlayerFlags
@@ -2673,9 +2665,6 @@ namespace Server.Mobiles
 
 		public override bool CanSee( Mobile m )
 		{
-			if ( m is CharacterStatue )
-				((CharacterStatue) m).OnRequestedAnimation( this );
-
 			if ( m is PlayerMobile && ((PlayerMobile)m).m_VisList.Contains( this ) )
 				return true;
 

@@ -134,8 +134,7 @@ namespace Server.Misc
 				|| item is TreasureMap || item is MessageInABottle
 				|| item is BaseArmor || item is BaseWeapon
 				|| item is BaseClothing
-				|| item is MonsterStatuette
-				|| item is MinotaurStatueDeed )
+				|| item is MonsterStatuette )
 				return true;
 
 			return false;

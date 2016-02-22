@@ -464,8 +464,6 @@ namespace Server.Multis
 				return true;
 			else if ( item is Dyes || item is DyeTub )
 				return true;
-			else if ( item is RewardBrazier )
-				return true;
 
 			return false;
 		}

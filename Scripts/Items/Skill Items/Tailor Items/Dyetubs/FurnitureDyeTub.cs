@@ -1,6 +1,6 @@
 namespace Server.Items
 {
-    public class FurnitureDyeTub : DyeTub, Engines.VeteranRewards.IRewardItem
+    public class FurnitureDyeTub : DyeTub
 	{
 		public override bool AllowDyables{ get{ return false; } }
 		public override bool AllowFurniture{ get{ return true; } }
@@ -21,14 +21,6 @@ namespace Server.Items
 		public FurnitureDyeTub()
 		{
 			LootType = LootType.Blessed;
-		}
-
-		public override void OnDoubleClick( Mobile from )
-		{
-			if ( m_IsRewardItem && !Engines.VeteranRewards.RewardSystem.CheckIsUsableBy( from, this, null ) )
-				return;
-
-			base.OnDoubleClick( from );
 		}
 
 		public FurnitureDyeTub( Serial serial ) : base( serial )
