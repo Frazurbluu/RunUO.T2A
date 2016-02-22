@@ -96,9 +96,6 @@ namespace Server.Engines.Harvest
             ore.Resources = res;
             ore.Veins = veins;
 
-            ore.RaceBonus = false;
-            ore.RandomizeVeins = false;
-
 			Definitions.Add(ore);
 			#endregion
 		}

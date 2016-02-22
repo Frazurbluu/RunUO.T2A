@@ -207,7 +207,6 @@
     <Compile Include="Items\Construction\Doors\Portcullis.cs" />
     <Compile Include="Items\Construction\Doors\SecretDoors.cs" />
     <Compile Include="Items\Misc\Silver.cs" />
-    <Compile Include=".\Engines\Harvest\Core\BonusHarvestResource.cs" />
     <Compile Include=".\Engines\Harvest\Core\HarvestBank.cs" />
     <Compile Include=".\Engines\Harvest\Core\HarvestDefinition.cs" />
     <Compile Include=".\Engines\Harvest\Core\HarvestResource.cs" />

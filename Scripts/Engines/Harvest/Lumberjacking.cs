@@ -85,9 +85,6 @@ namespace Server.Engines.Harvest
 			lumber.Resources = res;
 			lumber.Veins = veins;
 
-			lumber.RaceBonus = false;
-			lumber.RandomizeVeins = false;
-
 			m_Definition = lumber;
 			Definitions.Add( lumber );
 			#endregion
