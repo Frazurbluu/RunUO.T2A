@@ -728,7 +728,8 @@ namespace Server.Items
 
             /// GET DAMAGE
             //////////////////////////////////////////////////////////////////////////////////////////////////////
-            int min, max;
+            int min = MinDamage;
+            int max = MaxDamage;
 
             /// GetBaseDamageRange(attacker, out min, out max); - ToDo DamageMin/DamageMax to MinDamage/MaxDamage ones only and not in every hit, if possible.
             //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -749,10 +750,6 @@ namespace Server.Items
                     max = attacker.Str / 28;
                 }
             }
-
-            min = MinDamage;
-            max = MaxDamage;
-
 
             /// ROLL BASE DAMAGE
             //////////////////////////////////////////////////////////////////////////////////////////////////////
