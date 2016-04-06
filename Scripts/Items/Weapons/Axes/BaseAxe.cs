@@ -100,14 +100,6 @@ namespace Server.Items
 			HarvestSystem.BeginHarvesting( from, this );
 		}
 
-		public override void GetContextMenuEntries( Mobile from, List<ContextMenuEntry> list )
-		{
-			base.GetContextMenuEntries( from, list );
-
-			if ( HarvestSystem != null )
-				BaseHarvestTool.AddContextMenuEntries( from, this, list, HarvestSystem );
-		}
-
 		public override void Serialize( GenericWriter writer )
 		{
 			base.Serialize( writer );

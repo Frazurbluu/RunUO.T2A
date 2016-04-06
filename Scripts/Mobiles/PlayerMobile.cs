@@ -65,1844 +65,1581 @@ namespace Server.Mobiles
 		DismountRecovery = 1070859
 	}
 
-	public partial class PlayerMobile : Mobile
-	{
-		private class CountAndTimeStamp
-		{
-			private int m_Count;
-			private DateTime m_Stamp;
-
-			public CountAndTimeStamp()
-			{
-			}
-
-			public DateTime TimeStamp { get{ return m_Stamp; } }
-			public int Count
-			{
-				get { return m_Count; }
-				set	{ m_Count = value; m_Stamp = DateTime.Now; }
-			}
-		}
-
-		private NpcGuild m_NpcGuild;
-		private DateTime m_NpcGuildJoinTime;
-		private DateTime m_NextBODTurnInTime;
-		private TimeSpan m_NpcGuildGameTime;
-		private PlayerFlag m_Flags;
-		private int m_StepsTaken;
-		private int m_Profession;
-		private bool m_IsStealthing; // IsStealthing should be moved to Server.Mobiles
-		private bool m_IgnoreMobiles; // IgnoreMobiles should be moved to Server.Mobiles
-		/*
-		 * a value of zero means, that the mobile is not executing the spell. Otherwise,
-		 * the value should match the BaseMana required
-		*/
-		private int m_ExecutesLightningStrike; // move to Server.Mobiles??
-
-		private DateTime m_LastOnline;
-		private Server.Guilds.RankDefinition m_GuildRank;
-
-		private int m_GuildMessageHue, m_AllianceMessageHue;
-
-		private List<Mobile> m_AutoStabled;
-		private List<Mobile> m_AllFollowers;
-		private List<Mobile> m_RecentlyReported;
-
-		public List<Mobile> RecentlyReported
-		{
-			get
-			{
-				return m_RecentlyReported;
-			}
-			set
-			{
-				m_RecentlyReported = value;
-			}
-		}
-
-		public List<Mobile> AutoStabled { get { return m_AutoStabled; } }
-
-		public List<Mobile> AllFollowers
-		{
-			get
-			{
-				if( m_AllFollowers == null )
-					m_AllFollowers = new List<Mobile>();
-				return m_AllFollowers;
-			}
-		}
-
-		public Server.Guilds.RankDefinition GuildRank
-		{
-			get
-			{
-				if( this.AccessLevel >= AccessLevel.GameMaster )
-					return Server.Guilds.RankDefinition.Leader;
-				else
-					return m_GuildRank;
-			}
-			set{ m_GuildRank = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int GuildMessageHue
-		{
-			get{ return m_GuildMessageHue; }
-			set{ m_GuildMessageHue = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int AllianceMessageHue
-		{
-			get { return m_AllianceMessageHue; }
-			set { m_AllianceMessageHue = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int Profession
-		{
-			get{ return m_Profession; }
-			set{ m_Profession = value; }
-		}
-
-		public int StepsTaken
-		{
-			get{ return m_StepsTaken; }
-			set{ m_StepsTaken = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool IsStealthing // IsStealthing should be moved to Server.Mobiles
-		{
-			get { return m_IsStealthing; }
-			set { m_IsStealthing = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool IgnoreMobiles // IgnoreMobiles should be moved to Server.Mobiles
-		{
-			get
-			{
-				return m_IgnoreMobiles;
-			}
-			set
-			{
-				if( m_IgnoreMobiles != value )
-				{
-					m_IgnoreMobiles = value;
-					Delta( MobileDelta.Flags );
-				}
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public NpcGuild NpcGuild
-		{
-			get{ return m_NpcGuild; }
-			set{ m_NpcGuild = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime NpcGuildJoinTime
-		{
-			get{ return m_NpcGuildJoinTime; }
-			set{ m_NpcGuildJoinTime = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime NextBODTurnInTime
-		{
-			get{ return m_NextBODTurnInTime; }
-			set{ m_NextBODTurnInTime = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime LastOnline
-		{
-			get{ return m_LastOnline; }
-			set{ m_LastOnline = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime LastMoved
-		{
-			get{ return LastMoveTime; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public TimeSpan NpcGuildGameTime
-		{
-			get{ return m_NpcGuildGameTime; }
-			set{ m_NpcGuildGameTime = value; }
-		}
-
-		private int m_ToTItemsTurnedIn;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int ToTItemsTurnedIn
-		{
-			get { return m_ToTItemsTurnedIn; }
-			set { m_ToTItemsTurnedIn = value; }
-		}
-
-		private int m_ToTTotalMonsterFame;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int ToTTotalMonsterFame
-		{
-			get { return m_ToTTotalMonsterFame; }
-			set { m_ToTTotalMonsterFame = value; }
-		}
-
-		public int ExecutesLightningStrike
-		{
-			get { return m_ExecutesLightningStrike; }
-			set { m_ExecutesLightningStrike = value; }
-		}
-
-		public PlayerFlag Flags
-		{
-			get{ return m_Flags; }
-			set{ m_Flags = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool PagingSquelched
-		{
-			get{ return GetFlag( PlayerFlag.PagingSquelched ); }
-			set{ SetFlag( PlayerFlag.PagingSquelched, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool Glassblowing
-		{
-			get{ return GetFlag( PlayerFlag.Glassblowing ); }
-			set{ SetFlag( PlayerFlag.Glassblowing, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool Masonry
-		{
-			get{ return GetFlag( PlayerFlag.Masonry ); }
-			set{ SetFlag( PlayerFlag.Masonry, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool SandMining
-		{
-			get{ return GetFlag( PlayerFlag.SandMining ); }
-			set{ SetFlag( PlayerFlag.SandMining, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool StoneMining
-		{
-			get{ return GetFlag( PlayerFlag.StoneMining ); }
-			set{ SetFlag( PlayerFlag.StoneMining, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool ToggleMiningStone
-		{
-			get{ return GetFlag( PlayerFlag.ToggleMiningStone ); }
-			set{ SetFlag( PlayerFlag.ToggleMiningStone, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool KarmaLocked
-		{
-			get{ return GetFlag( PlayerFlag.KarmaLocked ); }
-			set{ SetFlag( PlayerFlag.KarmaLocked, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool AutoRenewInsurance
-		{
-			get{ return GetFlag( PlayerFlag.AutoRenewInsurance ); }
-			set{ SetFlag( PlayerFlag.AutoRenewInsurance, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool UseOwnFilter
-		{
-			get{ return GetFlag( PlayerFlag.UseOwnFilter ); }
-			set{ SetFlag( PlayerFlag.UseOwnFilter, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool PublicMyRunUO
-		{
-			get{ return GetFlag( PlayerFlag.PublicMyRunUO ); }
-			set{ SetFlag( PlayerFlag.PublicMyRunUO, value ); InvalidateMyRunUO(); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool AcceptGuildInvites
-		{
-			get{ return GetFlag( PlayerFlag.AcceptGuildInvites ); }
-			set{ SetFlag( PlayerFlag.AcceptGuildInvites, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool HasStatReward
-		{
-			get{ return GetFlag( PlayerFlag.HasStatReward ); }
-			set{ SetFlag( PlayerFlag.HasStatReward, value ); }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public bool RefuseTrades
-		{
-			get{ return GetFlag( PlayerFlag.RefuseTrades ); }
-			set{ SetFlag( PlayerFlag.RefuseTrades, value ); }
-		}
-
-		private Dictionary<Type, int> m_RecoverableAmmo = new Dictionary<Type,int>();
-
-		public Dictionary<Type, int> RecoverableAmmo
-		{
-			get { return m_RecoverableAmmo; }
-		}
-
-		public void RecoverAmmo()
-		{
-		}
-
-		private DateTime m_AnkhNextUse;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime AnkhNextUse
-		{
-			get{ return m_AnkhNextUse; }
-			set{ m_AnkhNextUse = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public TimeSpan DisguiseTimeLeft
-		{
-			get{ return DisguiseTimers.TimeRemaining( this ); }
-		}
-
-		private DateTime m_PeacedUntil;
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime PeacedUntil
-		{
-			get { return m_PeacedUntil; }
-			set { m_PeacedUntil = value; }
-		}
-
-		private DateTime m_AcceleratedStart;
-
-		[CommandProperty(AccessLevel.GameMaster)]
-		public DateTime AcceleratedStart
-		{
-			get { return m_AcceleratedStart; }
-			set { m_AcceleratedStart = value; }
-		}
-
-		private SkillName m_AcceleratedSkill;
-
-		[CommandProperty(AccessLevel.GameMaster)]
-		public SkillName AcceleratedSkill
-		{
-			get { return m_AcceleratedSkill; }
-			set { m_AcceleratedSkill = value; }
-		}
-
-		public static Direction GetDirection4( Point3D from, Point3D to )
-		{
-			int dx = from.X - to.X;
-			int dy = from.Y - to.Y;
-
-			int rx = dx - dy;
-			int ry = dx + dy;
-
-			Direction ret;
-
-			if ( rx >= 0 && ry >= 0 )
-				ret = Direction.West;
-			else if ( rx >= 0 && ry < 0 )
-				ret = Direction.South;
-			else if ( rx < 0 && ry < 0 )
-				ret = Direction.East;
-			else
-				ret = Direction.North;
-
-			return ret;
-		}
-
-		public override bool OnDroppedItemToWorld( Item item, Point3D location )
-		{
-			if ( !base.OnDroppedItemToWorld( item, location ) )
-				return false;
-
-			BounceInfo bi = item.GetBounce();
-
-			if ( bi != null )
-			{
-				Type type = item.GetType();
-
-				if ( type.IsDefined( typeof( FurnitureAttribute ), true ) || type.IsDefined( typeof( DynamicFlipingAttribute ), true ) )
-				{
-					object[] objs = type.GetCustomAttributes( typeof( FlipableAttribute ), true );
-
-					if ( objs != null && objs.Length > 0 )
-					{
-						FlipableAttribute fp = objs[0] as FlipableAttribute;
-
-						if ( fp != null )
-						{
-							int[] itemIDs = fp.ItemIDs;
-
-							Point3D oldWorldLoc = bi.m_WorldLoc;
-							Point3D newWorldLoc = location;
-
-							if ( oldWorldLoc.X != newWorldLoc.X || oldWorldLoc.Y != newWorldLoc.Y )
-							{
-								Direction dir = GetDirection4( oldWorldLoc, newWorldLoc );
-
-								if ( itemIDs.Length == 2 )
-								{
-									switch ( dir )
-									{
-										case Direction.North:
-										case Direction.South: item.ItemID = itemIDs[0]; break;
-										case Direction.East:
-										case Direction.West: item.ItemID = itemIDs[1]; break;
-									}
-								}
-								else if ( itemIDs.Length == 4 )
-								{
-									switch ( dir )
-									{
-										case Direction.South: item.ItemID = itemIDs[0]; break;
-										case Direction.East: item.ItemID = itemIDs[1]; break;
-										case Direction.North: item.ItemID = itemIDs[2]; break;
-										case Direction.West: item.ItemID = itemIDs[3]; break;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-			return true;
-		}
-
-		public override int GetPacketFlags()
-		{
-			int flags = base.GetPacketFlags();
-
-			if ( m_IgnoreMobiles )
-				flags |= 0x10;
-
-			return flags;
-		}
-
-		public override int GetOldPacketFlags()
-		{
-			int flags = base.GetOldPacketFlags();
-
-			if ( m_IgnoreMobiles )
-				flags |= 0x10;
-
-			return flags;
-		}
-
-		public bool GetFlag( PlayerFlag flag )
-		{
-			return ( (m_Flags & flag) != 0 );
-		}
-
-		public void SetFlag( PlayerFlag flag, bool value )
-		{
-			if ( value )
-				m_Flags |= flag;
-			else
-				m_Flags &= ~flag;
-		}
-
-		public static void Initialize()
-		{
-			if ( FastwalkPrevention )
-				PacketHandlers.RegisterThrottler( 0x02, new ThrottlePacketCallback( MovementThrottle_Callback ) );
-
-			EventSink.Login += new LoginEventHandler( OnLogin );
-			EventSink.Logout += new LogoutEventHandler( OnLogout );
-			EventSink.Connected += new ConnectedEventHandler( EventSink_Connected );
-			EventSink.Disconnected += new DisconnectedEventHandler( EventSink_Disconnected );
-		}
-
-		private MountBlock m_MountBlock;
-
-		public BlockMountType MountBlockReason
-		{
-			get
-			{
-				return ( CheckBlock( m_MountBlock ) ) ? m_MountBlock.m_Type : BlockMountType.None;
-			}
-		}
-
-		private static bool CheckBlock( MountBlock block )
-		{
-			return ( ( block is MountBlock ) && block.m_Timer.Running );
-		}
-
-		private class MountBlock
-		{
-			public BlockMountType m_Type;
-			public Timer m_Timer;
-
-			public MountBlock( TimeSpan duration, BlockMountType type, Mobile mobile )
-			{
-				m_Type = type;
-
-				m_Timer = Timer.DelayCall( duration, new TimerStateCallback<Mobile>( RemoveBlock ), mobile );
-			}
-
-			private void RemoveBlock( Mobile mobile )
-			{
-				( mobile as PlayerMobile ).m_MountBlock = null;
-			}
-		}
-
-		public void SetMountBlock( BlockMountType type, TimeSpan duration, bool dismount )
-		{
-			if( dismount )
-			{
-				if ( this.Mount != null )
-				{
-					this.Mount.Rider = null;
-				}
-			}
-
-			if( ( m_MountBlock == null ) || !m_MountBlock.m_Timer.Running || ( m_MountBlock.m_Timer.Next < ( DateTime.UtcNow + duration ) ) )
-			{
-				m_MountBlock = new MountBlock( duration, type, this );
-			}
-		}
-
-		protected override void OnRaceChange( Race oldRace )
-		{
-			ValidateEquipment();
-		}
-
-		public override int MaxWeight { get { return (40 + (int)(3.5 * this.Str)); } }
-
-		private int m_LastGlobalLight = -1, m_LastPersonalLight = -1;
-
-		public override void OnNetStateChanged()
-		{
-			m_LastGlobalLight = -1;
-			m_LastPersonalLight = -1;
-		}
-
-		public override void ComputeBaseLightLevels( out int global, out int personal )
-		{
-			global = LightCycle.ComputeLevelFor( this );
-			personal = this.LightLevel;
-		}
-
-		public override void CheckLightLevels( bool forceResend )
-		{
-			NetState ns = this.NetState;
-
-			if ( ns == null )
-				return;
-
-			int global, personal;
-
-			ComputeLightLevels( out global, out personal );
-
-			if ( !forceResend )
-				forceResend = ( global != m_LastGlobalLight || personal != m_LastPersonalLight );
-
-			if ( !forceResend )
-				return;
-
-			m_LastGlobalLight = global;
-			m_LastPersonalLight = personal;
-
-			ns.Send( GlobalLightLevel.Instantiate( global ) );
-			ns.Send( new PersonalLightLevel( this, personal ) );
-		}
-
-		private static void OnLogin( LoginEventArgs e )
-		{
-			Mobile from = e.Mobile;
-
-			if ( AccountHandler.LockdownLevel > AccessLevel.Player )
-			{
-				string notice;
-
-				Accounting.Account acct = from.Account as Accounting.Account;
-
-				if ( acct == null || !acct.HasAccess( from.NetState ) )
-				{
-					if ( from.AccessLevel == AccessLevel.Player )
-						notice = "The server is currently under lockdown. No players are allowed to log in at this time.";
-					else
-						notice = "The server is currently under lockdown. You do not have sufficient access level to connect.";
-
-					Timer.DelayCall( TimeSpan.FromSeconds( 1.0 ), new TimerStateCallback( Disconnect ), from );
-				}
-				else if ( from.AccessLevel >= AccessLevel.Administrator )
-				{
-					notice = "The server is currently under lockdown. As you are an administrator, you may change this from the [Admin gump.";
-				}
-				else
-				{
-					notice = "The server is currently under lockdown. You have sufficient access level to connect.";
-				}
-
-				from.SendGump( new NoticeGump( 1060637, 30720, notice, 0xFFC000, 300, 140, null, null ) );
-				return;
-			}
-		}
-
-		private bool m_NoDeltaRecursion;
-
-		public void ValidateEquipment()
-		{
-			if ( m_NoDeltaRecursion || Map == null || Map == Map.Internal )
-				return;
-
-			if ( this.Items == null )
-				return;
-
-			m_NoDeltaRecursion = true;
-			Timer.DelayCall( TimeSpan.Zero, new TimerCallback( ValidateEquipment_Sandbox ) );
-		}
-
-		private void ValidateEquipment_Sandbox()
-		{
-			try
-			{
-				if ( Map == null || Map == Map.Internal )
-					return;
-
-				List<Item> items = this.Items;
-
-				if ( items == null )
-					return;
-
-				bool moved = false;
-
-				int str = this.Str;
-				int dex = this.Dex;
-				int intel = this.Int;
-
-				Mobile from = this;
-
-				for ( int i = items.Count - 1; i >= 0; --i )
-				{
-					if ( i >= items.Count )
-						continue;
-
-					Item item = items[i];
-
-					if ( item is BaseWeapon )
-					{
-						BaseWeapon weapon = (BaseWeapon)item;
-
-						bool drop = false;
-
-						if( dex < weapon.DexRequirement )
-							drop = true;
-						else if( str < weapon.StrRequirement )
-							drop = true;
-						else if( intel < weapon.IntRequirement )
-							drop = true;
-						else if( weapon.RequiredRace != null && weapon.RequiredRace != this.Race )
-							drop = true;
-
-						if ( drop )
-						{
-							string name = weapon.Name;
-
-							if ( name == null )
-								name = String.Format( "#{0}", weapon.LabelNumber );
-
-							from.SendLocalizedMessage( 1062001, name ); // You can no longer wield your ~1_WEAPON~
-							from.AddToBackpack( weapon );
-							moved = true;
-						}
-					}
-					else if ( item is BaseArmor )
-					{
-						BaseArmor armor = (BaseArmor)item;
-
-						bool drop = false;
-
-						if ( !armor.AllowMaleWearer && !from.Female && from.AccessLevel < AccessLevel.GameMaster )
-						{
-							drop = true;
-						}
-						else if ( !armor.AllowFemaleWearer && from.Female && from.AccessLevel < AccessLevel.GameMaster )
-						{
-							drop = true;
-						}
-						else if( armor.RequiredRace != null && armor.RequiredRace != this.Race )
-						{
-							drop = true;
-						}
-						else
-						{
-							int strReq = armor.ComputeStatReq( StatType.Str );
-							int dexReq = armor.ComputeStatReq( StatType.Dex );
-							int intReq = armor.ComputeStatReq( StatType.Int );
-
-							if( dex < dexReq )
-								drop = true;
-							else if( str < strReq )
-								drop = true;
-							else if( intel < intReq )
-								drop = true;
-						}
-
-						if ( drop )
-						{
-							string name = armor.Name;
-
-							if ( name == null )
-								name = String.Format( "#{0}", armor.LabelNumber );
-
-							if ( armor is BaseShield )
-								from.SendLocalizedMessage( 1062003, name ); // You can no longer equip your ~1_SHIELD~
-							else
-								from.SendLocalizedMessage( 1062002, name ); // You can no longer wear your ~1_ARMOR~
-
-							from.AddToBackpack( armor );
-							moved = true;
-						}
-					}
-					else if ( item is BaseClothing )
-					{
-						BaseClothing clothing = (BaseClothing)item;
-
-						bool drop = false;
-
-						if ( !clothing.AllowMaleWearer && !from.Female && from.AccessLevel < AccessLevel.GameMaster )
-						{
-							drop = true;
-						}
-						else if ( !clothing.AllowFemaleWearer && from.Female && from.AccessLevel < AccessLevel.GameMaster )
-						{
-							drop = true;
-						}
-						else if( clothing.RequiredRace != null && clothing.RequiredRace != this.Race )
-						{
-							drop = true;
-						}
-						else
-						{
-							int strBonus = clothing.ComputeStatBonus( StatType.Str );
-							int strReq = clothing.StrRequirement;
-
-							if( str < strReq || (str + strBonus) < 1 )
-								drop = true;
-						}
-
-						if ( drop )
-						{
-							string name = clothing.Name;
-
-							if ( name == null )
-								name = String.Format( "#{0}", clothing.LabelNumber );
-
-							from.SendLocalizedMessage( 1062002, name ); // You can no longer wear your ~1_ARMOR~
-
-							from.AddToBackpack( clothing );
-							moved = true;
-						}
-					}
-				}
-
-				if ( moved )
-					from.SendLocalizedMessage( 500647 ); // Some equipment has been moved to your backpack.
-			}
-			catch ( Exception e )
-			{
-				Console.WriteLine( e );
-			}
-			finally
-			{
-				m_NoDeltaRecursion = false;
-			}
-		}
-
-		public override void Delta( MobileDelta flag )
-		{
-			base.Delta( flag );
-
-			if ( (flag & MobileDelta.Stat) != 0 )
-				ValidateEquipment();
-
-			if ( (flag & (MobileDelta.Name | MobileDelta.Hue)) != 0 )
-				InvalidateMyRunUO();
-		}
-
-		private static void Disconnect( object state )
-		{
-			NetState ns = ((Mobile)state).NetState;
-
-			if ( ns != null )
-				ns.Dispose();
-		}
-
-		private static void OnLogout( LogoutEventArgs e )
-		{
-		}
-
-		private static void EventSink_Connected( ConnectedEventArgs e )
-		{
-			PlayerMobile pm = e.Mobile as PlayerMobile;
-
-			if ( pm != null )
-			{
-				pm.m_SessionStart = DateTime.Now;
-				pm.BedrollLogout = false;
-				pm.LastOnline = DateTime.Now;
-			}
-
-			DisguiseTimers.StartTimer( e.Mobile );
-		}
-
-		private static void EventSink_Disconnected( DisconnectedEventArgs e )
-		{
-			Mobile from = e.Mobile;
-
-			PlayerMobile pm = e.Mobile as PlayerMobile;
-
-			if ( pm != null )
-			{
-				pm.m_GameTime += (DateTime.Now - pm.m_SessionStart);
-				pm.m_SpeechLog = null;
-				pm.LastOnline = DateTime.Now;
-			}
-
-			DisguiseTimers.StopTimer( from );
-		}
-
-		public override void RevealingAction()
-		{
-			Spells.Sixth.InvisibilitySpell.RemoveTimer( this );
-
-			base.RevealingAction();
-
-			m_IsStealthing = false; // IsStealthing should be moved to Server.Mobiles
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public override bool Hidden
-		{
-			get
-			{
-				return base.Hidden;
-			}
-			set
-			{
-				base.Hidden = value;
-
-				RemoveBuff( BuffIcon.Invisibility );	//Always remove, default to the hiding icon EXCEPT in the invis spell where it's explicitly set
-
-				if( !Hidden )
-				{
-					RemoveBuff( BuffIcon.HidingAndOrStealth );
-				}
-				else// if( !InvisibilitySpell.HasTimer( this ) )
-				{
-					BuffInfo.AddBuff( this, new BuffInfo( BuffIcon.HidingAndOrStealth, 1075655 ) );	//Hidden/Stealthing & You Are Hidden
-				}
-			}
-		}
-
-		public override void OnSubItemAdded( Item item )
-		{
-			if ( AccessLevel < AccessLevel.GameMaster && item.IsChildOf( this.Backpack ) )
-			{
-				int maxWeight = WeightOverloading.GetMaxWeight( this );
-				int curWeight = Mobile.BodyWeight + this.TotalWeight;
-
-				if ( curWeight > maxWeight )
-					this.SendLocalizedMessage( 1019035, true, String.Format( " : {0} / {1}", curWeight, maxWeight ) );
-			}
-		}
-
-		public override bool CanBeHarmful( Mobile target, bool message, bool ignoreOurBlessedness )
-		{
-			if ( (target is BaseCreature && ((BaseCreature)target).IsInvulnerable) || target is PlayerVendor || target is TownCrier )
-			{
-				if ( message )
-				{
-					if ( target.Title == null )
-						SendMessage( "{0} cannot be harmed.", target.Name );
-					else
-						SendMessage( "{0} {1} cannot be harmed.", target.Name, target.Title );
-				}
-
-				return false;
-			}
-
-			return base.CanBeHarmful( target, message, ignoreOurBlessedness );
-		}
-
-		public override void OnItemAdded( Item item )
-		{
-			base.OnItemAdded( item );
-
-			if ( item is BaseArmor || item is BaseWeapon )
-			{
-				Hits=Hits; Stam=Stam; Mana=Mana;
-			}
-
-			if ( this.NetState != null )
-				CheckLightLevels( false );
-
-			InvalidateMyRunUO();
-		}
-
-		public override void OnItemRemoved( Item item )
-		{
-			base.OnItemRemoved( item );
-
-			if ( item is BaseArmor || item is BaseWeapon )
-			{
-				Hits=Hits; Stam=Stam; Mana=Mana;
-			}
-
-			if ( this.NetState != null )
-				CheckLightLevels( false );
-
-			InvalidateMyRunUO();
-		}
-
-		public override double ArmorRating
-		{
-			get
-			{
-				//BaseArmor ar;
-				double rating = 0.0;
-
-				AddArmorRating( ref rating, NeckArmor );
-				AddArmorRating( ref rating, HandArmor );
-				AddArmorRating( ref rating, HeadArmor );
-				AddArmorRating( ref rating, ArmsArmor );
-				AddArmorRating( ref rating, LegsArmor );
-				AddArmorRating( ref rating, ChestArmor );
-				AddArmorRating( ref rating, ShieldArmor );
-				AddArmorRating( ref rating, ClothArmor );
-				
-				return VirtualArmor + VirtualArmorMod + rating;
-			}
-		}
-
-		private void AddArmorRating( ref double rating, Item armor )
-		{
-			BaseArmor ar = armor as BaseArmor;
-
-			if( ar != null )
-				rating += ar.ArmorRatingScaled;
-			
-			BaseClothing bc = armor as BaseClothing;
-
-			if( bc != null )
-				rating += bc.ArmorRatingScaled;
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public override int HitsMax
-		{
-			get
-			{
-				int strBase;
-				int strOffs = GetStatOffset( StatType.Str );
-
-				strBase = this.RawStr;
-
-				return (strBase / 2) + 50 + strOffs;
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public override int Str
-		{
-			get
-			{
-				return base.Str;
-			}
-			set
-			{
-				base.Str = value;
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public override int Int
-		{
-			get
-			{
-				return base.Int;
-			}
-			set
-			{
-				base.Int = value;
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public override int Dex
-		{
-			get
-			{
-				return base.Dex;
-			}
-			set
-			{
-				base.Dex = value;
-			}
-		}
-
-		public override bool Move( Direction d )
-		{
-			NetState ns = this.NetState;
-
-			if ( ns != null )
-			{
-				if ( HasGump( typeof( ResurrectGump ) ) ) {
-					if ( Alive ) {
-						CloseGump( typeof( ResurrectGump ) );
-					} else {
-						SendLocalizedMessage( 500111 ); // You are frozen and cannot move.
-						return false;
-					}
-				}
-			}
-
-			TimeSpan speed = ComputeMovementSpeed( d );
-
-			bool res;
-
-			if ( !Alive )
-				Server.Movement.MovementImpl.IgnoreMovableImpassables = true;
-
-			res = base.Move( d );
-
-			Server.Movement.MovementImpl.IgnoreMovableImpassables = false;
-
-			if ( !res )
-				return false;
-
-			m_NextMovementTime += speed;
-
-			return true;
-		}
-
-		public SkillName[] AnimalFormRestrictedSkills{ get{ return m_AnimalFormRestrictedSkills; } }
-
-		private SkillName[] m_AnimalFormRestrictedSkills = new SkillName[]
-		{
-			SkillName.ArmsLore,	SkillName.Begging, SkillName.Discordance, SkillName.Forensics,
-			SkillName.Inscribe, SkillName.ItemID, SkillName.Meditation, SkillName.Peacemaking,
-			SkillName.Provocation, SkillName.RemoveTrap, SkillName.SpiritSpeak, SkillName.Stealing,
-			SkillName.TasteID
-		};
-
-		private bool m_LastProtectedMessage;
-		private int m_NextProtectionCheck = 10;
-
-		public virtual void RecheckTownProtection()
-		{
-			m_NextProtectionCheck = 10;
-
-			Regions.GuardedRegion reg = (Regions.GuardedRegion) this.Region.GetRegion( typeof( Regions.GuardedRegion ) );
-			bool isProtected = ( reg != null && !reg.IsDisabled() );
-
-			if ( isProtected != m_LastProtectedMessage )
-			{
-				if ( isProtected )
-					SendLocalizedMessage( 500112 ); // You are now under the protection of the town guards.
-				else
-					SendLocalizedMessage( 500113 ); // You have left the protection of the town guards.
-
-				m_LastProtectedMessage = isProtected;
-			}
-		}
-
-		public override void MoveToWorld( Point3D loc, Map map )
-		{
-			base.MoveToWorld( loc, map );
-
-			RecheckTownProtection();
-		}
-
-		public override void SetLocation( Point3D loc, bool isTeleport )
-		{
-			if ( !isTeleport && AccessLevel == AccessLevel.Player )
-			{
-				// moving, not teleporting
-				int zDrop = ( this.Location.Z - loc.Z );
-
-				if ( zDrop > 20 ) // we fell more than one story
-					Hits -= ((zDrop / 20) * 10) - 5; // deal some damage; does not kill, disrupt, etc
-			}
-
-			base.SetLocation( loc, isTeleport );
-
-			if ( isTeleport || --m_NextProtectionCheck == 0 )
-				RecheckTownProtection();
-		}
-
-		private delegate void ContextCallback();
-
-		private class CallbackEntry : ContextMenuEntry
-		{
-			private ContextCallback m_Callback;
-
-			public CallbackEntry( int number, ContextCallback callback ) : this( number, -1, callback )
-			{
-			}
-
-			public CallbackEntry( int number, int range, ContextCallback callback ) : base( number, range )
-			{
-				m_Callback = callback;
-			}
-
-			public override void OnClick()
-			{
-				if ( m_Callback != null )
-					m_Callback();
-			}
-		}
-
-		public override void DisruptiveAction()
-		{
-			if( Meditating )
-			{
-				RemoveBuff( BuffIcon.ActiveMeditation );
-			}
-
-			base.DisruptiveAction();
-		}
-
-		public override void OnDoubleClick( Mobile from )
-		{
-			if ( this == from && !Warmode )
-			{
-				IMount mount = Mount;
-
-				if ( mount != null )
-					return;
-			}
-
-			base.OnDoubleClick( from );
-		}
-
-		public override bool CheckEquip( Item item )
-		{
-			if ( !base.CheckEquip( item ) )
-				return false;
-
-			if ( this.AccessLevel < AccessLevel.GameMaster && item.Layer != Layer.Mount && this.HasTrade )
-			{
-				BounceInfo bounce = item.GetBounce();
-
-				if ( bounce != null )
-				{
-					if ( bounce.m_Parent is Item )
-					{
-						Item parent = (Item) bounce.m_Parent;
-
-						if ( parent == this.Backpack || parent.IsChildOf( this.Backpack ) )
-							return true;
-					}
-					else if ( bounce.m_Parent == this )
-					{
-						return true;
-					}
-				}
-
-				SendLocalizedMessage( 1004042 ); // You can only equip what you are already carrying while you have a trade pending.
-				return false;
-			}
-
-			return true;
-		}
-
-		public override bool CheckTrade( Mobile to, Item item, SecureTradeContainer cont, bool message, bool checkItems, int plusItems, int plusWeight )
-		{
-			int msgNum = 0;
-
-			if ( cont == null )
-			{
-				if ( to.Holding != null )
-					msgNum = 1062727; // You cannot trade with someone who is dragging something.
-				else if ( this.HasTrade )
-					msgNum = 1062781; // You are already trading with someone else!
-				else if ( to.HasTrade )
-					msgNum = 1062779; // That person is already involved in a trade
-				else if ( to is PlayerMobile && ((PlayerMobile)to).RefuseTrades )
-					msgNum = 1154111; // ~1_NAME~ is refusing all trades.
-			}
-
-			if ( msgNum == 0 )
-			{
-				if ( cont != null )
-				{
-					plusItems += cont.TotalItems;
-					plusWeight += cont.TotalWeight;
-				}
-
-				if ( this.Backpack == null || !this.Backpack.CheckHold( this, item, false, checkItems, plusItems, plusWeight ) )
-					msgNum = 1004040; // You would not be able to hold this if the trade failed.
-				else if ( to.Backpack == null || !to.Backpack.CheckHold( to, item, false, checkItems, plusItems, plusWeight ) )
-					msgNum = 1004039; // The recipient of this trade would not be able to carry this.
-				else
-					msgNum = CheckContentForTrade( item );
-			}
-
-			if ( msgNum != 0 )
-			{
-				if ( message )
-				{
-					if ( msgNum == 1154111 )
-						SendLocalizedMessage( msgNum, to.Name );
-					else
-						SendLocalizedMessage( msgNum );
-				}
-
-				return false;
-			}
-
-			return true;
-		}
-
-		private static int CheckContentForTrade( Item item )
-		{
-			if ( item is TrapableContainer && ((TrapableContainer)item).TrapType != TrapType.None )
-				return 1004044; // You may not trade trapped items.
-
-			if ( SkillHandlers.StolenItem.IsStolen( item ) )
-				return 1004043; // You may not trade recently stolen items.
-
-			if ( item is Container )
-			{
-				foreach ( Item subItem in item.Items )
-				{
-					int msg = CheckContentForTrade( subItem );
-
-					if ( msg != 0 )
-						return msg;
-				}
-			}
-
-			return 0;
-		}
-
-		public override bool CheckNonlocalDrop( Mobile from, Item item, Item target )
-		{
-			if ( !base.CheckNonlocalDrop( from, item, target ) )
-				return false;
-
-			if ( from.AccessLevel >= AccessLevel.GameMaster )
-				return true;
-
-			Container pack = this.Backpack;
-			if ( from == this && this.HasTrade && ( target == pack || target.IsChildOf( pack ) ) )
-			{
-				BounceInfo bounce = item.GetBounce();
-
-				if ( bounce != null && bounce.m_Parent is Item )
-				{
-					Item parent = (Item) bounce.m_Parent;
-
-					if ( parent == pack || parent.IsChildOf( pack ) )
-						return true;
-				}
-
-				SendLocalizedMessage( 1004041 ); // You can't do that while you have a trade pending.
-				return false;
-			}
-
-			return true;
-		}
-
-		protected override void OnLocationChange( Point3D oldLocation )
-		{
-			CheckLightLevels( false );
-		}
-
-		public override bool OnMoveOver( Mobile m )
-		{
-			if ( m is BaseCreature && !((BaseCreature)m).Controlled )
-				return ( !Alive || !m.Alive || IsDeadBondedPet || m.IsDeadBondedPet ) || ( Hidden && AccessLevel > AccessLevel.Player );
-
-			return base.OnMoveOver( m );
-		}
-
-		public override bool CheckShove( Mobile shoved )
-		{
-			if( m_IgnoreMobiles )
-				return true;
-			else
-				return base.CheckShove( shoved );
-		}
-
-		public override void OnDamage( int amount, Mobile from, bool willKill )
-		{
-			int disruptThreshold = 0;
-
-			if ( amount > disruptThreshold )
-			{
-				BandageContext c = BandageContext.GetContext( this );
-
-				if ( c != null )
-					c.Slip();
-			}
-
-			WeightOverloading.FatigueOnDamage( this, amount );
-
-			if ( willKill && from is PlayerMobile )
-				Timer.DelayCall( TimeSpan.FromSeconds( 10 ), new TimerCallback( ((PlayerMobile) from).RecoverAmmo ) );
-
-			base.OnDamage( amount, from, willKill );
-		}
-
-		public override void Resurrect()
-		{
-			bool wasAlive = this.Alive;
-
-			base.Resurrect();
-
-			if ( this.Alive && !wasAlive )
-			{
-				Item deathRobe = new DeathRobe();
-
-				if ( !EquipItem( deathRobe ) )
-					deathRobe.Delete();
-			}
-		}
-
-		public override double RacialSkillBonus
-		{
-			get
-			{
-				return 0;
-			}
-		}
-
-		public override void OnWarmodeChanged()
-		{
-			if ( !Warmode )
-				Timer.DelayCall( TimeSpan.FromSeconds( 10 ), new TimerCallback( RecoverAmmo ) );
-		}
-
-		private List<Item> m_EquipSnapshot;
-
-		public List<Item> EquipSnapshot
-		{
-			get { return m_EquipSnapshot; }
-		}
-
-		private bool FindItems_Callback(Item item)
-		{
-			if (!item.Deleted && (item.LootType == LootType.Blessed || item.Insured))
-			{
-				if (this.Backpack != item.ParentEntity)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public override bool OnBeforeDeath()
-		{
-			NetState state = NetState;
-
-			if ( state != null )
-				state.CancelAllTrades();
-
-			DropHolding();
-
-			m_EquipSnapshot = new List<Item>( this.Items );
-
-			RecoverAmmo();
-
-			return base.OnBeforeDeath();
-		}
-
-		public override DeathMoveResult GetParentMoveResultFor( Item item )
-		{
-			// It seems all items are unmarked on death, even blessed/insured ones
-			if ( item.QuestItem )
-				item.QuestItem = false;
-
-			return GetParentMoveResultFor(item);
-		}
-
-		public override DeathMoveResult GetInventoryMoveResultFor( Item item )
-		{
-			// It seems all items are unmarked on death, even blessed/insured ones
-			if ( item.QuestItem )
-				item.QuestItem = false;
-
-			return GetInventoryMoveResultFor(item);
-		}
-
-		public override void OnDeath( Container c )
-		{
-			base.OnDeath(c);
-
-			m_EquipSnapshot = null;
-
-			HueMod = -1;
-			NameMod = null;
-			SavagePaintExpiration = TimeSpan.Zero;
-
-			SetHairMods( -1, -1 );
-
-			PolymorphSpell.StopTimer( this );
-			IncognitoSpell.StopTimer( this );
-			DisguiseTimers.RemoveTimer( this );
-
-			EndAction( typeof( PolymorphSpell ) );
-			EndAction( typeof( IncognitoSpell ) );
-
-			SkillHandlers.StolenItem.ReturnOnDeath( c );
-
-			if ( m_PermaFlags.Count > 0 )
-			{
-				m_PermaFlags.Clear();
-
-				if ( c is Corpse )
-					((Corpse)c).Criminal = true;
-
-				if ( SkillHandlers.Stealing.ClassicMode )
-					Criminal = true;
-			}
-
-			Mobile killer = this.FindMostRecentDamager( true );
-
-			if ( killer is BaseCreature )
-			{
-				BaseCreature bc = (BaseCreature)killer;
-
-				Mobile master = bc.GetMaster();
-				if( master != null )
-					killer = master;
-			}
-
-			Server.Guilds.Guild.HandleDeath( this, killer );
-
-			if( m_BuffTable != null )
-			{
-				List<BuffInfo> list = new List<BuffInfo>();
-
-				foreach( BuffInfo buff in m_BuffTable.Values )
-				{
-					if( !buff.RetainThroughDeath )
-					{
-						list.Add( buff );
-					}
-				}
-
-				for( int i = 0; i < list.Count; i++ )
-				{
-					RemoveBuff( list[i] );
-				}
-			}
-		}
-
-		private List<Mobile> m_PermaFlags;
-		private List<Mobile> m_VisList;
-		private Hashtable m_AntiMacroTable;
-		private TimeSpan m_GameTime;
-		private TimeSpan m_ShortTermElapse;
-		private TimeSpan m_LongTermElapse;
-		private DateTime m_SessionStart;
-		private DateTime m_LastEscortTime;
-		private DateTime m_LastPetBallTime;
-		private DateTime m_NextSmithBulkOrder;
-		private DateTime m_NextTailorBulkOrder;
-		private DateTime m_SavagePaintExpiration;
-		private SkillName m_Learning = (SkillName)(-1);
-
-		public SkillName Learning
-		{
-			get{ return m_Learning; }
-			set{ m_Learning = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public TimeSpan SavagePaintExpiration
-		{
-			get
-			{
-				TimeSpan ts = m_SavagePaintExpiration - DateTime.Now;
-
-				if ( ts < TimeSpan.Zero )
-					ts = TimeSpan.Zero;
-
-				return ts;
-			}
-			set
-			{
-				m_SavagePaintExpiration = DateTime.Now + value;
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public TimeSpan NextSmithBulkOrder
-		{
-			get
-			{
-				TimeSpan ts = m_NextSmithBulkOrder - DateTime.Now;
-
-				if ( ts < TimeSpan.Zero )
-					ts = TimeSpan.Zero;
-
-				return ts;
-			}
-			set
-			{
-				try{ m_NextSmithBulkOrder = DateTime.Now + value; }
-				catch{}
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public TimeSpan NextTailorBulkOrder
-		{
-			get
-			{
-				TimeSpan ts = m_NextTailorBulkOrder - DateTime.Now;
-
-				if ( ts < TimeSpan.Zero )
-					ts = TimeSpan.Zero;
-
-				return ts;
-			}
-			set
-			{
-				try{ m_NextTailorBulkOrder = DateTime.Now + value; }
-				catch{}
-			}
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime LastEscortTime
-		{
-			get{ return m_LastEscortTime; }
-			set{ m_LastEscortTime = value; }
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public DateTime LastPetBallTime
-		{
-			get{ return m_LastPetBallTime; }
-			set{ m_LastPetBallTime = value; }
-		}
-
-		public PlayerMobile()
-		{
-			m_AutoStabled = new List<Mobile>();
-
-			m_VisList = new List<Mobile>();
-			m_PermaFlags = new List<Mobile>();
-			m_AntiMacroTable = new Hashtable();
-			m_RecentlyReported = new List<Mobile>();
-
-			m_GameTime = TimeSpan.Zero;
-			m_ShortTermElapse = TimeSpan.FromHours( 8.0 );
-			m_LongTermElapse = TimeSpan.FromHours( 40.0 );
-
-			m_GuildRank = Guilds.RankDefinition.Lowest;
-
-			InvalidateMyRunUO();
-		}
-
-		public override bool MutateSpeech( List<Mobile> hears, ref string text, ref object context )
-		{
-			if ( Alive )
-				return false;
-
-			return base.MutateSpeech( hears, ref text, ref context );
-		}
-
-		private static void SendToStaffMessage( Mobile from, string text )
-		{
-			Packet p = null;
-
-			foreach( NetState ns in from.GetClientsInRange( 8 ) )
-			{
-				Mobile mob = ns.Mobile;
-
-				if( mob != null && mob.AccessLevel >= AccessLevel.GameMaster && mob.AccessLevel > from.AccessLevel )
-				{
-					if( p == null )
-						p = Packet.Acquire( new UnicodeMessage( from.Serial, from.Body, MessageType.Regular, from.SpeechHue, 3, from.Language, from.Name, text ) );
-
-					ns.Send( p );
-				}
-			}
-
-			Packet.Release( p );
-		}
-
-		private static void SendToStaffMessage( Mobile from, string format, params object[] args )
-		{
-			SendToStaffMessage( from, String.Format( format, args ) );
-		}
-
-		public override ApplyPoisonResult ApplyPoison( Mobile from, Poison poison )
-		{
-			if ( !Alive )
-				return ApplyPoisonResult.Immune;
-
-			ApplyPoisonResult result = base.ApplyPoison( from, poison );
-
-			if ( from != null && result == ApplyPoisonResult.Poisoned && PoisonTimer is PoisonImpl.PoisonTimer )
-				(PoisonTimer as PoisonImpl.PoisonTimer).From = from;
-
-			return result;
-		}
-
-		public PlayerMobile( Serial s ) : base( s )
-		{
-			m_VisList = new List<Mobile>();
-			m_AntiMacroTable = new Hashtable();
-			InvalidateMyRunUO();
-		}
-
-		public List<Mobile> VisibilityList
-		{
-			get{ return m_VisList; }
-		}
-
-		public List<Mobile> PermaFlags
-		{
-			get{ return m_PermaFlags; }
-		}
-
-		public override bool IsHarmfulCriminal( Mobile target )
-		{
-			if ( SkillHandlers.Stealing.ClassicMode && target is PlayerMobile && ((PlayerMobile)target).m_PermaFlags.Count > 0 )
-			{
-				int noto = Notoriety.Compute( this, target );
-
-				if ( noto == Notoriety.Innocent )
-					target.Delta( MobileDelta.Noto );
-
-				return false;
-			}
-
-			if ( target is BaseCreature && ((BaseCreature)target).InitialInnocent && !((BaseCreature)target).Controlled )
-				return false;
-
-			return base.IsHarmfulCriminal( target );
-		}
-
-		public bool AntiMacroCheck( Skill skill, object obj )
-		{
-			if ( obj == null || m_AntiMacroTable == null || this.AccessLevel != AccessLevel.Player )
-				return true;
-
-			Hashtable tbl = (Hashtable)m_AntiMacroTable[skill];
-			if ( tbl == null )
-				m_AntiMacroTable[skill] = tbl = new Hashtable();
-
-			CountAndTimeStamp count = (CountAndTimeStamp)tbl[obj];
-			if ( count != null )
-			{
-				if ( count.TimeStamp + SkillCheck.AntiMacroExpire <= DateTime.Now )
-				{
-					count.Count = 1;
-					return true;
-				}
-				else
-				{
-					++count.Count;
-					if ( count.Count <= SkillCheck.Allowance )
-						return true;
-					else
-						return false;
-				}
-			}
-			else
-			{
-				tbl[obj] = count = new CountAndTimeStamp();
-				count.Count = 1;
-
-				return true;
-			}
-		}
-
-		private void RevertHair()
-		{
-			SetHairMods( -1, -1 );
-		}
-
-		public override void Deserialize( GenericReader reader )
-		{
-			base.Deserialize( reader );
-			int version = reader.ReadInt();
-
-			switch ( version )
-			{
-				case 28:
-				{
-					m_PeacedUntil = reader.ReadDateTime();
-
-					goto case 27;
-				}
-				case 27:
-				{
-					m_AnkhNextUse = reader.ReadDateTime();
-
-					goto case 26;
-				}
-				case 26:
-				{
-					m_AutoStabled = reader.ReadStrongMobileList();
-
-					goto case 25;
-				}
-				case 25:
-				{
-					int recipeCount = reader.ReadInt();
-
-					if( recipeCount > 0 )
-					{
-						m_AcquiredRecipes = new Dictionary<int, bool>();
-
-						for( int i = 0; i < recipeCount; i++ )
-						{
-							int r = reader.ReadInt();
-							if( reader.ReadBool() )	//Don't add in recipies which we haven't gotten or have been removed
-								m_AcquiredRecipes.Add( r, true );
-						}
-					}
-					goto case 24;
-				}
-				case 24:
-				case 23:
-				case 22:
-				case 21:
-				{
-					m_ToTItemsTurnedIn = reader.ReadEncodedInt();
-					m_ToTTotalMonsterFame = reader.ReadInt();
-					goto case 20;
-				}
-				case 20:
-				{
-					m_AllianceMessageHue = reader.ReadEncodedInt();
-					m_GuildMessageHue = reader.ReadEncodedInt();
-
-					goto case 19;
-				}
-				case 19:
-				{
-					int rank = reader.ReadEncodedInt();
-					int maxRank = Guilds.RankDefinition.Ranks.Length -1;
-					if( rank > maxRank )
-						rank = maxRank;
-
-					m_GuildRank = Guilds.RankDefinition.Ranks[rank];
-					m_LastOnline = reader.ReadDateTime();
-					goto case 18;
-				}
-				case 18:
-				case 17:
-				case 16:
-				{
-					m_Profession = reader.ReadEncodedInt();
-					goto case 15;
-				}
-				case 15:
-				case 14:
-				case 13:
-				case 12:
-				case 11:
-				{
-					if ( version < 13 )
-					{
-						List<Item> payed = reader.ReadStrongItemList();
-
-						for ( int i = 0; i < payed.Count; ++i )
-							payed[i].PayedInsurance = true;
-					}
-
-					goto case 10;
-				}
-				case 10:
-				{
-					if ( reader.ReadBool() )
-					{
-						m_HairModID = reader.ReadInt();
-						m_HairModHue = reader.ReadInt();
-						m_BeardModID = reader.ReadInt();
-						m_BeardModHue = reader.ReadInt();
-					}
-
-					goto case 9;
-				}
-				case 9:
-				{
-					SavagePaintExpiration = reader.ReadTimeSpan();
-
-					if ( SavagePaintExpiration > TimeSpan.Zero )
-					{
-						BodyMod = ( Female ? 184 : 183 );
-						HueMod = 0;
-					}
-
-					goto case 8;
-				}
-				case 8:
-				{
-					m_NpcGuild = (NpcGuild)reader.ReadInt();
-					m_NpcGuildJoinTime = reader.ReadDateTime();
-					m_NpcGuildGameTime = reader.ReadTimeSpan();
-					goto case 7;
-				}
-				case 7:
-				{
-					m_PermaFlags = reader.ReadStrongMobileList();
-					goto case 6;
-				}
-				case 6:
-				{
-					NextTailorBulkOrder = reader.ReadTimeSpan();
-					goto case 5;
-				}
-				case 5:
-				{
-					NextSmithBulkOrder = reader.ReadTimeSpan();
-					goto case 4;
-				}
-				case 4:
-				case 3:
-				case 2:
-				{
-					m_Flags = (PlayerFlag)reader.ReadInt();
-					goto case 1;
-				}
-				case 1:
-				{
-					m_LongTermElapse = reader.ReadTimeSpan();
-					m_ShortTermElapse = reader.ReadTimeSpan();
-					m_GameTime = reader.ReadTimeSpan();
-					goto case 0;
-				}
-				case 0:
-				{
-					if( version < 26 )
-						m_AutoStabled = new List<Mobile>();
-					break;
-				}
+    public partial class PlayerMobile : Mobile
+    {
+        private class CountAndTimeStamp
+        {
+            private int m_Count;
+            private DateTime m_Stamp;
+
+            public CountAndTimeStamp()
+            {
+            }
+
+            public DateTime TimeStamp { get { return m_Stamp; } }
+            public int Count
+            {
+                get { return m_Count; }
+                set { m_Count = value; m_Stamp = DateTime.Now; }
+            }
+        }
+
+        private NpcGuild m_NpcGuild;
+        private DateTime m_NpcGuildJoinTime;
+        private TimeSpan m_NpcGuildGameTime;
+        private PlayerFlag m_Flags;
+        private int m_StepsTaken;
+        private int m_Profession;
+        private bool m_IsStealthing; // IsStealthing should be moved to Server.Mobiles
+        private bool m_IgnoreMobiles; // IgnoreMobiles should be moved to Server.Mobiles
+                                      /*
+                                       * a value of zero means, that the mobile is not executing the spell. Otherwise,
+                                       * the value should match the BaseMana required
+                                      */
+
+        private DateTime m_LastOnline;
+        private Server.Guilds.RankDefinition m_GuildRank;
+
+        private int m_GuildMessageHue, m_AllianceMessageHue;
+
+        private List<Mobile> m_AllFollowers;
+        private List<Mobile> m_RecentlyReported;
+
+        public List<Mobile> RecentlyReported
+        {
+            get
+            {
+                return m_RecentlyReported;
+            }
+            set
+            {
+                m_RecentlyReported = value;
+            }
+        }
+
+        public List<Mobile> AllFollowers
+        {
+            get
+            {
+                if (m_AllFollowers == null)
+                    m_AllFollowers = new List<Mobile>();
+                return m_AllFollowers;
+            }
+        }
+
+        public Server.Guilds.RankDefinition GuildRank
+        {
+            get
+            {
+                if (this.AccessLevel >= AccessLevel.GameMaster)
+                    return Server.Guilds.RankDefinition.Leader;
+                else
+                    return m_GuildRank;
+            }
+            set { m_GuildRank = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public int GuildMessageHue
+        {
+            get { return m_GuildMessageHue; }
+            set { m_GuildMessageHue = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public int AllianceMessageHue
+        {
+            get { return m_AllianceMessageHue; }
+            set { m_AllianceMessageHue = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public int Profession
+        {
+            get { return m_Profession; }
+            set { m_Profession = value; }
+        }
+
+        public int StepsTaken
+        {
+            get { return m_StepsTaken; }
+            set { m_StepsTaken = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool IsStealthing // IsStealthing should be moved to Server.Mobiles
+        {
+            get { return m_IsStealthing; }
+            set { m_IsStealthing = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool IgnoreMobiles // IgnoreMobiles should be moved to Server.Mobiles
+        {
+            get
+            {
+                return m_IgnoreMobiles;
+            }
+            set
+            {
+                if (m_IgnoreMobiles != value)
+                {
+                    m_IgnoreMobiles = value;
+                    Delta(MobileDelta.Flags);
+                }
+            }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public NpcGuild NpcGuild
+        {
+            get { return m_NpcGuild; }
+            set { m_NpcGuild = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public DateTime NpcGuildJoinTime
+        {
+            get { return m_NpcGuildJoinTime; }
+            set { m_NpcGuildJoinTime = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public DateTime LastOnline
+        {
+            get { return m_LastOnline; }
+            set { m_LastOnline = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public TimeSpan NpcGuildGameTime
+        {
+            get { return m_NpcGuildGameTime; }
+            set { m_NpcGuildGameTime = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool PagingSquelched
+        {
+            get { return GetFlag(PlayerFlag.PagingSquelched); }
+            set { SetFlag(PlayerFlag.PagingSquelched, value); }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool KarmaLocked
+        {
+            get { return GetFlag(PlayerFlag.KarmaLocked); }
+            set { SetFlag(PlayerFlag.KarmaLocked, value); }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool PublicMyRunUO
+        {
+            get { return GetFlag(PlayerFlag.PublicMyRunUO); }
+            set { SetFlag(PlayerFlag.PublicMyRunUO, value); InvalidateMyRunUO(); }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public bool AcceptGuildInvites
+        {
+            get { return GetFlag(PlayerFlag.AcceptGuildInvites); }
+            set { SetFlag(PlayerFlag.AcceptGuildInvites, value); }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public TimeSpan DisguiseTimeLeft
+        {
+            get { return DisguiseTimers.TimeRemaining(this); }
+        }
+
+        private DateTime m_PeacedUntil;
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public DateTime PeacedUntil
+        {
+            get { return m_PeacedUntil; }
+            set { m_PeacedUntil = value; }
+        }
+
+        public static Direction GetDirection4(Point3D from, Point3D to)
+        {
+            int dx = from.X - to.X;
+            int dy = from.Y - to.Y;
+
+            int rx = dx - dy;
+            int ry = dx + dy;
+
+            Direction ret;
+
+            if (rx >= 0 && ry >= 0)
+                ret = Direction.West;
+            else if (rx >= 0 && ry < 0)
+                ret = Direction.South;
+            else if (rx < 0 && ry < 0)
+                ret = Direction.East;
+            else
+                ret = Direction.North;
+
+            return ret;
+        }
+
+        public override bool OnDroppedItemToWorld(Item item, Point3D location)
+        {
+            if (!base.OnDroppedItemToWorld(item, location))
+                return false;
+
+            BounceInfo bi = item.GetBounce();
+
+            if (bi != null)
+            {
+                Type type = item.GetType();
+
+                if (type.IsDefined(typeof(FurnitureAttribute), true) || type.IsDefined(typeof(DynamicFlipingAttribute), true))
+                {
+                    object[] objs = type.GetCustomAttributes(typeof(FlipableAttribute), true);
+
+                    if (objs != null && objs.Length > 0)
+                    {
+                        FlipableAttribute fp = objs[0] as FlipableAttribute;
+
+                        if (fp != null)
+                        {
+                            int[] itemIDs = fp.ItemIDs;
+
+                            Point3D oldWorldLoc = bi.m_WorldLoc;
+                            Point3D newWorldLoc = location;
+
+                            if (oldWorldLoc.X != newWorldLoc.X || oldWorldLoc.Y != newWorldLoc.Y)
+                            {
+                                Direction dir = GetDirection4(oldWorldLoc, newWorldLoc);
+
+                                if (itemIDs.Length == 2)
+                                {
+                                    switch (dir)
+                                    {
+                                        case Direction.North:
+                                        case Direction.South: item.ItemID = itemIDs[0]; break;
+                                        case Direction.East:
+                                        case Direction.West: item.ItemID = itemIDs[1]; break;
+                                    }
+                                }
+                                else if (itemIDs.Length == 4)
+                                {
+                                    switch (dir)
+                                    {
+                                        case Direction.South: item.ItemID = itemIDs[0]; break;
+                                        case Direction.East: item.ItemID = itemIDs[1]; break;
+                                        case Direction.North: item.ItemID = itemIDs[2]; break;
+                                        case Direction.West: item.ItemID = itemIDs[3]; break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetPacketFlags()
+        {
+            int flags = base.GetPacketFlags();
+
+            if (m_IgnoreMobiles)
+                flags |= 0x10;
+
+            return flags;
+        }
+
+        public override int GetOldPacketFlags()
+        {
+            int flags = base.GetOldPacketFlags();
+
+            if (m_IgnoreMobiles)
+                flags |= 0x10;
+
+            return flags;
+        }
+
+        public bool GetFlag(PlayerFlag flag)
+        {
+            return ((m_Flags & flag) != 0);
+        }
+
+        public void SetFlag(PlayerFlag flag, bool value)
+        {
+            if (value)
+                m_Flags |= flag;
+            else
+                m_Flags &= ~flag;
+        }
+
+        public static void Initialize()
+        {
+            if (FastwalkPrevention)
+                PacketHandlers.RegisterThrottler(0x02, new ThrottlePacketCallback(MovementThrottle_Callback));
+
+            EventSink.Login += new LoginEventHandler(OnLogin);
+            EventSink.Logout += new LogoutEventHandler(OnLogout);
+            EventSink.Connected += new ConnectedEventHandler(EventSink_Connected);
+            EventSink.Disconnected += new DisconnectedEventHandler(EventSink_Disconnected);
+        }
+
+        private MountBlock m_MountBlock;
+
+        public BlockMountType MountBlockReason
+        {
+            get
+            {
+                return (CheckBlock(m_MountBlock)) ? m_MountBlock.m_Type : BlockMountType.None;
+            }
+        }
+
+        private static bool CheckBlock(MountBlock block)
+        {
+            return ((block is MountBlock) && block.m_Timer.Running);
+        }
+
+        private class MountBlock
+        {
+            public BlockMountType m_Type;
+            public Timer m_Timer;
+
+            public MountBlock(TimeSpan duration, BlockMountType type, Mobile mobile)
+            {
+                m_Type = type;
+
+                m_Timer = Timer.DelayCall(duration, new TimerStateCallback<Mobile>(RemoveBlock), mobile);
+            }
+
+            private void RemoveBlock(Mobile mobile)
+            {
+                (mobile as PlayerMobile).m_MountBlock = null;
+            }
+        }
+
+        public void SetMountBlock(BlockMountType type, TimeSpan duration, bool dismount)
+        {
+            if (dismount)
+            {
+                if (this.Mount != null)
+                {
+                    this.Mount.Rider = null;
+                }
+            }
+
+            if ((m_MountBlock == null) || !m_MountBlock.m_Timer.Running || (m_MountBlock.m_Timer.Next < (DateTime.UtcNow + duration)))
+            {
+                m_MountBlock = new MountBlock(duration, type, this);
+            }
+        }
+
+        protected override void OnRaceChange(Race oldRace)
+        {
+            ValidateEquipment();
+        }
+
+        public override int MaxWeight { get { return (40 + (int)(3.5 * this.Str)); } }
+
+        private int m_LastGlobalLight = -1, m_LastPersonalLight = -1;
+
+        public override void OnNetStateChanged()
+        {
+            m_LastGlobalLight = -1;
+            m_LastPersonalLight = -1;
+        }
+
+        public override void ComputeBaseLightLevels(out int global, out int personal)
+        {
+            global = LightCycle.ComputeLevelFor(this);
+            personal = this.LightLevel;
+        }
+
+        public override void CheckLightLevels(bool forceResend)
+        {
+            NetState ns = this.NetState;
+
+            if (ns == null)
+                return;
+
+            int global, personal;
+
+            ComputeLightLevels(out global, out personal);
+
+            if (!forceResend)
+                forceResend = (global != m_LastGlobalLight || personal != m_LastPersonalLight);
+
+            if (!forceResend)
+                return;
+
+            m_LastGlobalLight = global;
+            m_LastPersonalLight = personal;
+
+            ns.Send(GlobalLightLevel.Instantiate(global));
+            ns.Send(new PersonalLightLevel(this, personal));
+        }
+
+        private static void OnLogin(LoginEventArgs e)
+        {
+            Mobile from = e.Mobile;
+
+            if (AccountHandler.LockdownLevel > AccessLevel.Player)
+            {
+                string notice;
+
+                Accounting.Account acct = from.Account as Accounting.Account;
+
+                if (acct == null || !acct.HasAccess(from.NetState))
+                {
+                    if (from.AccessLevel == AccessLevel.Player)
+                        notice = "The server is currently under lockdown. No players are allowed to log in at this time.";
+                    else
+                        notice = "The server is currently under lockdown. You do not have sufficient access level to connect.";
+
+                    Timer.DelayCall(TimeSpan.FromSeconds(1.0), new TimerStateCallback(Disconnect), from);
+                }
+                else if (from.AccessLevel >= AccessLevel.Administrator)
+                {
+                    notice = "The server is currently under lockdown. As you are an administrator, you may change this from the [Admin gump.";
+                }
+                else
+                {
+                    notice = "The server is currently under lockdown. You have sufficient access level to connect.";
+                }
+
+                from.SendGump(new NoticeGump(1060637, 30720, notice, 0xFFC000, 300, 140, null, null));
+                return;
+            }
+        }
+
+        private bool m_NoDeltaRecursion;
+
+        public void ValidateEquipment()
+        {
+            if (m_NoDeltaRecursion || Map == null || Map == Map.Internal)
+                return;
+
+            if (this.Items == null)
+                return;
+
+            m_NoDeltaRecursion = true;
+            Timer.DelayCall(TimeSpan.Zero, new TimerCallback(ValidateEquipment_Sandbox));
+        }
+
+        private void ValidateEquipment_Sandbox()
+        {
+            try
+            {
+                if (Map == null || Map == Map.Internal)
+                    return;
+
+                List<Item> items = this.Items;
+
+                if (items == null)
+                    return;
+
+                bool moved = false;
+
+                int str = this.Str;
+                int dex = this.Dex;
+                int intel = this.Int;
+
+                Mobile from = this;
+
+                for (int i = items.Count - 1; i >= 0; --i)
+                {
+                    if (i >= items.Count)
+                        continue;
+
+                    Item item = items[i];
+
+                    if (item is BaseWeapon)
+                    {
+                        BaseWeapon weapon = (BaseWeapon)item;
+
+                        bool drop = false;
+
+                        if (dex < weapon.DexRequirement)
+                            drop = true;
+                        else if (str < weapon.StrRequirement)
+                            drop = true;
+                        else if (intel < weapon.IntRequirement)
+                            drop = true;
+                        else if (weapon.RequiredRace != null && weapon.RequiredRace != this.Race)
+                            drop = true;
+
+                        if (drop)
+                        {
+                            string name = weapon.Name;
+
+                            if (name == null)
+                                name = String.Format("#{0}", weapon.LabelNumber);
+
+                            from.SendLocalizedMessage(1062001, name); // You can no longer wield your ~1_WEAPON~
+                            from.AddToBackpack(weapon);
+                            moved = true;
+                        }
+                    }
+                    else if (item is BaseArmor)
+                    {
+                        BaseArmor armor = (BaseArmor)item;
+
+                        bool drop = false;
+
+                        if (!armor.AllowMaleWearer && !from.Female && from.AccessLevel < AccessLevel.GameMaster)
+                        {
+                            drop = true;
+                        }
+                        else if (!armor.AllowFemaleWearer && from.Female && from.AccessLevel < AccessLevel.GameMaster)
+                        {
+                            drop = true;
+                        }
+                        else if (armor.RequiredRace != null && armor.RequiredRace != this.Race)
+                        {
+                            drop = true;
+                        }
+                        else
+                        {
+                            int strReq = armor.ComputeStatReq(StatType.Str);
+                            int dexReq = armor.ComputeStatReq(StatType.Dex);
+                            int intReq = armor.ComputeStatReq(StatType.Int);
+
+                            if (dex < dexReq)
+                                drop = true;
+                            else if (str < strReq)
+                                drop = true;
+                            else if (intel < intReq)
+                                drop = true;
+                        }
+
+                        if (drop)
+                        {
+                            string name = armor.Name;
+
+                            if (name == null)
+                                name = String.Format("#{0}", armor.LabelNumber);
+
+                            if (armor is BaseShield)
+                                from.SendLocalizedMessage(1062003, name); // You can no longer equip your ~1_SHIELD~
+                            else
+                                from.SendLocalizedMessage(1062002, name); // You can no longer wear your ~1_ARMOR~
+
+                            from.AddToBackpack(armor);
+                            moved = true;
+                        }
+                    }
+                    else if (item is BaseClothing)
+                    {
+                        BaseClothing clothing = (BaseClothing)item;
+
+                        bool drop = false;
+
+                        if (!clothing.AllowMaleWearer && !from.Female && from.AccessLevel < AccessLevel.GameMaster)
+                        {
+                            drop = true;
+                        }
+                        else if (!clothing.AllowFemaleWearer && from.Female && from.AccessLevel < AccessLevel.GameMaster)
+                        {
+                            drop = true;
+                        }
+                        else if (clothing.RequiredRace != null && clothing.RequiredRace != this.Race)
+                        {
+                            drop = true;
+                        }
+                        else
+                        {
+                            int strBonus = clothing.ComputeStatBonus(StatType.Str);
+                            int strReq = clothing.StrRequirement;
+
+                            if (str < strReq || (str + strBonus) < 1)
+                                drop = true;
+                        }
+
+                        if (drop)
+                        {
+                            string name = clothing.Name;
+
+                            if (name == null)
+                                name = String.Format("#{0}", clothing.LabelNumber);
+
+                            from.SendLocalizedMessage(1062002, name); // You can no longer wear your ~1_ARMOR~
+
+                            from.AddToBackpack(clothing);
+                            moved = true;
+                        }
+                    }
+                }
+
+                if (moved)
+                    from.SendLocalizedMessage(500647); // Some equipment has been moved to your backpack.
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            finally
+            {
+                m_NoDeltaRecursion = false;
+            }
+        }
+
+        public override void Delta(MobileDelta flag)
+        {
+            base.Delta(flag);
+
+            if ((flag & MobileDelta.Stat) != 0)
+                ValidateEquipment();
+
+            if ((flag & (MobileDelta.Name | MobileDelta.Hue)) != 0)
+                InvalidateMyRunUO();
+        }
+
+        private static void Disconnect(object state)
+        {
+            NetState ns = ((Mobile)state).NetState;
+
+            if (ns != null)
+                ns.Dispose();
+        }
+
+        private static void OnLogout(LogoutEventArgs e)
+        {
+        }
+
+        private static void EventSink_Connected(ConnectedEventArgs e)
+        {
+            PlayerMobile pm = e.Mobile as PlayerMobile;
+
+            if (pm != null)
+            {
+                pm.m_SessionStart = DateTime.Now;
+                pm.BedrollLogout = false;
+                pm.LastOnline = DateTime.Now;
+            }
+
+            DisguiseTimers.StartTimer(e.Mobile);
+        }
+
+        private static void EventSink_Disconnected(DisconnectedEventArgs e)
+        {
+            Mobile from = e.Mobile;
+
+            PlayerMobile pm = e.Mobile as PlayerMobile;
+
+            if (pm != null)
+            {
+                pm.m_GameTime += (DateTime.Now - pm.m_SessionStart);
+                pm.m_SpeechLog = null;
+                pm.LastOnline = DateTime.Now;
+            }
+
+            DisguiseTimers.StopTimer(from);
+        }
+
+        public override void RevealingAction()
+        {
+            Spells.Sixth.InvisibilitySpell.RemoveTimer(this);
+
+            base.RevealingAction();
+
+            m_IsStealthing = false; // IsStealthing should be moved to Server.Mobiles
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public override bool Hidden
+        {
+            get
+            {
+                return base.Hidden;
+            }
+            set
+            {
+                base.Hidden = value;
+
+                RemoveBuff(BuffIcon.Invisibility);  //Always remove, default to the hiding icon EXCEPT in the invis spell where it's explicitly set
+
+                if (!Hidden)
+                {
+                    RemoveBuff(BuffIcon.HidingAndOrStealth);
+                }
+                else// if( !InvisibilitySpell.HasTimer( this ) )
+                {
+                    BuffInfo.AddBuff(this, new BuffInfo(BuffIcon.HidingAndOrStealth, 1075655)); //Hidden/Stealthing & You Are Hidden
+                }
+            }
+        }
+
+        public override void OnSubItemAdded(Item item)
+        {
+            if (AccessLevel < AccessLevel.GameMaster && item.IsChildOf(this.Backpack))
+            {
+                int maxWeight = WeightOverloading.GetMaxWeight(this);
+                int curWeight = Mobile.BodyWeight + this.TotalWeight;
+
+                if (curWeight > maxWeight)
+                    this.SendLocalizedMessage(1019035, true, String.Format(" : {0} / {1}", curWeight, maxWeight));
+            }
+        }
+
+        public override bool CanBeHarmful(Mobile target, bool message, bool ignoreOurBlessedness)
+        {
+            if ((target is BaseCreature && ((BaseCreature)target).IsInvulnerable) || target is PlayerVendor || target is TownCrier)
+            {
+                if (message)
+                {
+                    if (target.Title == null)
+                        SendMessage("{0} cannot be harmed.", target.Name);
+                    else
+                        SendMessage("{0} {1} cannot be harmed.", target.Name, target.Title);
+                }
+
+                return false;
+            }
+
+            return base.CanBeHarmful(target, message, ignoreOurBlessedness);
+        }
+
+        public override void OnItemAdded(Item item)
+        {
+            base.OnItemAdded(item);
+
+            if (item is BaseArmor || item is BaseWeapon)
+            {
+                Hits = Hits; Stam = Stam; Mana = Mana;
+            }
+
+            if (this.NetState != null)
+                CheckLightLevels(false);
+
+            InvalidateMyRunUO();
+        }
+
+        public override void OnItemRemoved(Item item)
+        {
+            base.OnItemRemoved(item);
+
+            if (item is BaseArmor || item is BaseWeapon)
+            {
+                Hits = Hits; Stam = Stam; Mana = Mana;
+            }
+
+            if (this.NetState != null)
+                CheckLightLevels(false);
+
+            InvalidateMyRunUO();
+        }
+
+        public override double ArmorRating
+        {
+            get
+            {
+                //BaseArmor ar;
+                double rating = 0.0;
+
+                AddArmorRating(ref rating, NeckArmor);
+                AddArmorRating(ref rating, HandArmor);
+                AddArmorRating(ref rating, HeadArmor);
+                AddArmorRating(ref rating, ArmsArmor);
+                AddArmorRating(ref rating, LegsArmor);
+                AddArmorRating(ref rating, ChestArmor);
+                AddArmorRating(ref rating, ShieldArmor);
+                AddArmorRating(ref rating, ClothArmor);
+
+                return VirtualArmor + VirtualArmorMod + rating;
+            }
+        }
+
+        private void AddArmorRating(ref double rating, Item armor)
+        {
+            BaseArmor ar = armor as BaseArmor;
+
+            if (ar != null)
+                rating += ar.ArmorRatingScaled;
+
+            BaseClothing bc = armor as BaseClothing;
+
+            if (bc != null)
+                rating += bc.ArmorRatingScaled;
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public override int HitsMax
+        {
+            get
+            {
+                int strBase;
+                int strOffs = GetStatOffset(StatType.Str);
+
+                strBase = this.RawStr;
+
+                return (strBase / 2) + 50 + strOffs;
+            }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public override int Str
+        {
+            get
+            {
+                return base.Str;
+            }
+            set
+            {
+                base.Str = value;
+            }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public override int Int
+        {
+            get
+            {
+                return base.Int;
+            }
+            set
+            {
+                base.Int = value;
+            }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public override int Dex
+        {
+            get
+            {
+                return base.Dex;
+            }
+            set
+            {
+                base.Dex = value;
+            }
+        }
+
+        public override bool Move(Direction d)
+        {
+            NetState ns = this.NetState;
+
+            if (ns != null)
+            {
+                if (HasGump(typeof(ResurrectGump))) {
+                    if (Alive) {
+                        CloseGump(typeof(ResurrectGump));
+                    } else {
+                        SendLocalizedMessage(500111); // You are frozen and cannot move.
+                        return false;
+                    }
+                }
+            }
+
+            TimeSpan speed = ComputeMovementSpeed(d);
+
+            bool res;
+
+            if (!Alive)
+                Server.Movement.MovementImpl.IgnoreMovableImpassables = true;
+
+            res = base.Move(d);
+
+            Server.Movement.MovementImpl.IgnoreMovableImpassables = false;
+
+            if (!res)
+                return false;
+
+            m_NextMovementTime += speed;
+
+            return true;
+        }
+
+        private bool m_LastProtectedMessage;
+        private int m_NextProtectionCheck = 10;
+
+        public virtual void RecheckTownProtection()
+        {
+            m_NextProtectionCheck = 10;
+
+            Regions.GuardedRegion reg = (Regions.GuardedRegion)this.Region.GetRegion(typeof(Regions.GuardedRegion));
+            bool isProtected = (reg != null && !reg.IsDisabled());
+
+            if (isProtected != m_LastProtectedMessage)
+            {
+                if (isProtected)
+                    SendLocalizedMessage(500112); // You are now under the protection of the town guards.
+                else
+                    SendLocalizedMessage(500113); // You have left the protection of the town guards.
+
+                m_LastProtectedMessage = isProtected;
+            }
+        }
+
+        public override void MoveToWorld(Point3D loc, Map map)
+        {
+            base.MoveToWorld(loc, map);
+
+            RecheckTownProtection();
+        }
+
+        public override void SetLocation(Point3D loc, bool isTeleport)
+        {
+            if (!isTeleport && AccessLevel == AccessLevel.Player)
+            {
+                // moving, not teleporting
+                int zDrop = (this.Location.Z - loc.Z);
+
+                if (zDrop > 20) // we fell more than one story
+                    Hits -= ((zDrop / 20) * 10) - 5; // deal some damage; does not kill, disrupt, etc
+            }
+
+            base.SetLocation(loc, isTeleport);
+
+            if (isTeleport || --m_NextProtectionCheck == 0)
+                RecheckTownProtection();
+        }
+
+        private delegate void ContextCallback();
+
+        private class CallbackEntry : ContextMenuEntry
+        {
+            private ContextCallback m_Callback;
+
+            public CallbackEntry(int number, ContextCallback callback) : this(number, -1, callback)
+            {
+            }
+
+            public CallbackEntry(int number, int range, ContextCallback callback) : base(number, range)
+            {
+                m_Callback = callback;
+            }
+
+            public override void OnClick()
+            {
+                if (m_Callback != null)
+                    m_Callback();
+            }
+        }
+
+        public override void DisruptiveAction()
+        {
+            if (Meditating)
+            {
+                RemoveBuff(BuffIcon.ActiveMeditation);
+            }
+
+            base.DisruptiveAction();
+        }
+
+        public override void OnDoubleClick(Mobile from)
+        {
+            if (this == from && !Warmode)
+            {
+                IMount mount = Mount;
+
+                if (mount != null)
+                    return;
+            }
+
+            base.OnDoubleClick(from);
+        }
+
+        public override bool CheckEquip(Item item)
+        {
+            if (!base.CheckEquip(item))
+                return false;
+
+            if (this.AccessLevel < AccessLevel.GameMaster && item.Layer != Layer.Mount && this.HasTrade)
+            {
+                BounceInfo bounce = item.GetBounce();
+
+                if (bounce != null)
+                {
+                    if (bounce.m_Parent is Item)
+                    {
+                        Item parent = (Item)bounce.m_Parent;
+
+                        if (parent == this.Backpack || parent.IsChildOf(this.Backpack))
+                            return true;
+                    }
+                    else if (bounce.m_Parent == this)
+                    {
+                        return true;
+                    }
+                }
+
+                SendLocalizedMessage(1004042); // You can only equip what you are already carrying while you have a trade pending.
+                return false;
+            }
+
+            return true;
+        }
+
+        public override bool CheckTrade(Mobile to, Item item, SecureTradeContainer cont, bool message, bool checkItems, int plusItems, int plusWeight)
+        {
+            int msgNum = 0;
+
+            if (cont == null)
+            {
+                if (to.Holding != null)
+                    msgNum = 1062727; // You cannot trade with someone who is dragging something.
+                else if (this.HasTrade)
+                    msgNum = 1062781; // You are already trading with someone else!
+                else if (to.HasTrade)
+                    msgNum = 1062779; // That person is already involved in a trade
+            }
+
+            if (msgNum == 0)
+            {
+                if (cont != null)
+                {
+                    plusItems += cont.TotalItems;
+                    plusWeight += cont.TotalWeight;
+                }
+
+                if (this.Backpack == null || !this.Backpack.CheckHold(this, item, false, checkItems, plusItems, plusWeight))
+                    msgNum = 1004040; // You would not be able to hold this if the trade failed.
+                else if (to.Backpack == null || !to.Backpack.CheckHold(to, item, false, checkItems, plusItems, plusWeight))
+                    msgNum = 1004039; // The recipient of this trade would not be able to carry this.
+                else
+                    msgNum = CheckContentForTrade(item);
+            }
+
+            if (msgNum != 0)
+            {
+                if (message)
+                {
+                    if (msgNum == 1154111)
+                        SendLocalizedMessage(msgNum, to.Name);
+                    else
+                        SendLocalizedMessage(msgNum);
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private static int CheckContentForTrade(Item item)
+        {
+            if (item is TrapableContainer && ((TrapableContainer)item).TrapType != TrapType.None)
+                return 1004044; // You may not trade trapped items.
+
+            if (SkillHandlers.StolenItem.IsStolen(item))
+                return 1004043; // You may not trade recently stolen items.
+
+            if (item is Container)
+            {
+                foreach (Item subItem in item.Items)
+                {
+                    int msg = CheckContentForTrade(subItem);
+
+                    if (msg != 0)
+                        return msg;
+                }
+            }
+
+            return 0;
+        }
+
+        public override bool CheckNonlocalDrop(Mobile from, Item item, Item target)
+        {
+            if (!base.CheckNonlocalDrop(from, item, target))
+                return false;
+
+            if (from.AccessLevel >= AccessLevel.GameMaster)
+                return true;
+
+            Container pack = this.Backpack;
+            if (from == this && this.HasTrade && (target == pack || target.IsChildOf(pack)))
+            {
+                BounceInfo bounce = item.GetBounce();
+
+                if (bounce != null && bounce.m_Parent is Item)
+                {
+                    Item parent = (Item)bounce.m_Parent;
+
+                    if (parent == pack || parent.IsChildOf(pack))
+                        return true;
+                }
+
+                SendLocalizedMessage(1004041); // You can't do that while you have a trade pending.
+                return false;
+            }
+
+            return true;
+        }
+
+        protected override void OnLocationChange(Point3D oldLocation)
+        {
+            CheckLightLevels(false);
+        }
+
+        public override bool OnMoveOver(Mobile m)
+        {
+            if (m is BaseCreature && !((BaseCreature)m).Controlled)
+                return (!Alive || !m.Alive || IsDeadBondedPet || m.IsDeadBondedPet) || (Hidden && AccessLevel > AccessLevel.Player);
+
+            return base.OnMoveOver(m);
+        }
+
+        public override bool CheckShove(Mobile shoved)
+        {
+            if (m_IgnoreMobiles)
+                return true;
+            else
+                return base.CheckShove(shoved);
+        }
+
+        public override void OnDamage(int amount, Mobile from, bool willKill)
+        {
+            int disruptThreshold = 0;
+
+            if (amount > disruptThreshold)
+            {
+                BandageContext c = BandageContext.GetContext(this);
+
+                if (c != null)
+                    c.Slip();
+            }
+
+            WeightOverloading.FatigueOnDamage(this, amount);
+
+            base.OnDamage(amount, from, willKill);
+        }
+
+        public override void Resurrect()
+        {
+            bool wasAlive = this.Alive;
+
+            base.Resurrect();
+
+            if (this.Alive && !wasAlive)
+            {
+                Item deathRobe = new DeathRobe();
+
+                if (!EquipItem(deathRobe))
+                    deathRobe.Delete();
+            }
+        }
+
+        public override double RacialSkillBonus
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        private List<Item> m_EquipSnapshot;
+
+        public List<Item> EquipSnapshot
+        {
+            get { return m_EquipSnapshot; }
+        }
+
+        private bool FindItems_Callback(Item item)
+        {
+            if (!item.Deleted && (item.LootType == LootType.Blessed || item.Insured))
+            {
+                if (this.Backpack != item.ParentEntity)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public override bool OnBeforeDeath()
+        {
+            NetState state = NetState;
+
+            if (state != null)
+                state.CancelAllTrades();
+
+            DropHolding();
+
+            m_EquipSnapshot = new List<Item>(this.Items);
+
+            return base.OnBeforeDeath();
+        }
+
+        public override DeathMoveResult GetParentMoveResultFor(Item item)
+        {
+            // It seems all items are unmarked on death, even blessed/insured ones
+            if (item.QuestItem)
+                item.QuestItem = false;
+
+            return GetParentMoveResultFor(item);
+        }
+
+        public override DeathMoveResult GetInventoryMoveResultFor(Item item)
+        {
+            // It seems all items are unmarked on death, even blessed/insured ones
+            if (item.QuestItem)
+                item.QuestItem = false;
+
+            return GetInventoryMoveResultFor(item);
+        }
+
+        public override void OnDeath(Container c)
+        {
+            base.OnDeath(c);
+
+            m_EquipSnapshot = null;
+
+            HueMod = -1;
+            NameMod = null;
+            SavagePaintExpiration = TimeSpan.Zero;
+
+            SetHairMods(-1, -1);
+
+            PolymorphSpell.StopTimer(this);
+            IncognitoSpell.StopTimer(this);
+            DisguiseTimers.RemoveTimer(this);
+
+            EndAction(typeof(PolymorphSpell));
+            EndAction(typeof(IncognitoSpell));
+
+            SkillHandlers.StolenItem.ReturnOnDeath(c);
+
+            if (m_PermaFlags.Count > 0)
+            {
+                m_PermaFlags.Clear();
+
+                if (c is Corpse)
+                    ((Corpse)c).Criminal = true;
+
+                if (SkillHandlers.Stealing.ClassicMode)
+                    Criminal = true;
+            }
+
+            Mobile killer = this.FindMostRecentDamager(true);
+
+            if (killer is BaseCreature)
+            {
+                BaseCreature bc = (BaseCreature)killer;
+
+                Mobile master = bc.GetMaster();
+                if (master != null)
+                    killer = master;
+            }
+
+            Server.Guilds.Guild.HandleDeath(this, killer);
+
+            if (m_BuffTable != null)
+            {
+                List<BuffInfo> list = new List<BuffInfo>();
+
+                foreach (BuffInfo buff in m_BuffTable.Values)
+                {
+                    if (!buff.RetainThroughDeath)
+                    {
+                        list.Add(buff);
+                    }
+                }
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    RemoveBuff(list[i]);
+                }
+            }
+        }
+
+        private List<Mobile> m_PermaFlags;
+        private List<Mobile> m_VisList;
+        private Hashtable m_AntiMacroTable;
+        private TimeSpan m_GameTime;
+        private TimeSpan m_ShortTermElapse;
+        private TimeSpan m_LongTermElapse;
+        private DateTime m_SessionStart;
+        private DateTime m_LastEscortTime;
+        private DateTime m_SavagePaintExpiration;
+        private SkillName m_Learning = (SkillName)(-1);
+
+        public SkillName Learning
+        {
+            get { return m_Learning; }
+            set { m_Learning = value; }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public TimeSpan SavagePaintExpiration
+        {
+            get
+            {
+                TimeSpan ts = m_SavagePaintExpiration - DateTime.Now;
+
+                if (ts < TimeSpan.Zero)
+                    ts = TimeSpan.Zero;
+
+                return ts;
+            }
+            set
+            {
+                m_SavagePaintExpiration = DateTime.Now + value;
+            }
+        }
+
+        [CommandProperty(AccessLevel.GameMaster)]
+        public DateTime LastEscortTime
+        {
+            get { return m_LastEscortTime; }
+            set { m_LastEscortTime = value; }
+        }
+
+        public PlayerMobile()
+        {
+            m_VisList = new List<Mobile>();
+            m_PermaFlags = new List<Mobile>();
+            m_AntiMacroTable = new Hashtable();
+            m_RecentlyReported = new List<Mobile>();
+
+            m_GameTime = TimeSpan.Zero;
+            m_ShortTermElapse = TimeSpan.FromHours(8.0);
+            m_LongTermElapse = TimeSpan.FromHours(40.0);
+
+            m_GuildRank = Guilds.RankDefinition.Lowest;
+
+            InvalidateMyRunUO();
+        }
+
+        public override bool MutateSpeech(List<Mobile> hears, ref string text, ref object context)
+        {
+            if (Alive)
+                return false;
+
+            return base.MutateSpeech(hears, ref text, ref context);
+        }
+
+        private static void SendToStaffMessage(Mobile from, string text)
+        {
+            Packet p = null;
+
+            foreach (NetState ns in from.GetClientsInRange(8))
+            {
+                Mobile mob = ns.Mobile;
+
+                if (mob != null && mob.AccessLevel >= AccessLevel.GameMaster && mob.AccessLevel > from.AccessLevel)
+                {
+                    if (p == null)
+                        p = Packet.Acquire(new UnicodeMessage(from.Serial, from.Body, MessageType.Regular, from.SpeechHue, 3, from.Language, from.Name, text));
+
+                    ns.Send(p);
+                }
+            }
+
+            Packet.Release(p);
+        }
+
+        private static void SendToStaffMessage(Mobile from, string format, params object[] args)
+        {
+            SendToStaffMessage(from, String.Format(format, args));
+        }
+
+        public override ApplyPoisonResult ApplyPoison(Mobile from, Poison poison)
+        {
+            if (!Alive)
+                return ApplyPoisonResult.Immune;
+
+            ApplyPoisonResult result = base.ApplyPoison(from, poison);
+
+            if (from != null && result == ApplyPoisonResult.Poisoned && PoisonTimer is PoisonImpl.PoisonTimer)
+                (PoisonTimer as PoisonImpl.PoisonTimer).From = from;
+
+            return result;
+        }
+
+        public PlayerMobile(Serial s) : base(s)
+        {
+            m_VisList = new List<Mobile>();
+            m_AntiMacroTable = new Hashtable();
+            InvalidateMyRunUO();
+        }
+
+        public List<Mobile> VisibilityList
+        {
+            get { return m_VisList; }
+        }
+
+        public List<Mobile> PermaFlags
+        {
+            get { return m_PermaFlags; }
+        }
+
+        public override bool IsHarmfulCriminal(Mobile target)
+        {
+            if (SkillHandlers.Stealing.ClassicMode && target is PlayerMobile && ((PlayerMobile)target).m_PermaFlags.Count > 0)
+            {
+                int noto = Notoriety.Compute(this, target);
+
+                if (noto == Notoriety.Innocent)
+                    target.Delta(MobileDelta.Noto);
+
+                return false;
+            }
+
+            if (target is BaseCreature && ((BaseCreature)target).InitialInnocent && !((BaseCreature)target).Controlled)
+                return false;
+
+            return base.IsHarmfulCriminal(target);
+        }
+
+        public bool AntiMacroCheck(Skill skill, object obj)
+        {
+            if (obj == null || m_AntiMacroTable == null || this.AccessLevel != AccessLevel.Player)
+                return true;
+
+            Hashtable tbl = (Hashtable)m_AntiMacroTable[skill];
+            if (tbl == null)
+                m_AntiMacroTable[skill] = tbl = new Hashtable();
+
+            CountAndTimeStamp count = (CountAndTimeStamp)tbl[obj];
+            if (count != null)
+            {
+                if (count.TimeStamp + SkillCheck.AntiMacroExpire <= DateTime.Now)
+                {
+                    count.Count = 1;
+                    return true;
+                }
+                else
+                {
+                    ++count.Count;
+                    if (count.Count <= SkillCheck.Allowance)
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            else
+            {
+                tbl[obj] = count = new CountAndTimeStamp();
+                count.Count = 1;
+
+                return true;
+            }
+        }
+
+        private void RevertHair()
+        {
+            SetHairMods(-1, -1);
+        }
+
+        public override void Deserialize(GenericReader reader)
+        {
+            base.Deserialize(reader);
+            int version = reader.ReadInt();
+
+            switch (version)
+            {
+                case 28:
+                    {
+                        m_PeacedUntil = reader.ReadDateTime();
+
+                        goto case 27;
+                    }
+                case 27:
+                case 26:
+                case 25:
+                case 24:
+                case 23:
+                case 22:
+                case 21:
+                case 20:
+                    {
+                        m_AllianceMessageHue = reader.ReadEncodedInt();
+                        m_GuildMessageHue = reader.ReadEncodedInt();
+
+                        goto case 19;
+                    }
+                case 19:
+                    {
+                        int rank = reader.ReadEncodedInt();
+                        int maxRank = Guilds.RankDefinition.Ranks.Length - 1;
+                        if (rank > maxRank)
+                            rank = maxRank;
+
+                        m_GuildRank = Guilds.RankDefinition.Ranks[rank];
+                        m_LastOnline = reader.ReadDateTime();
+                        goto case 18;
+                    }
+                case 18:
+                case 17:
+                case 16:
+                    {
+                        m_Profession = reader.ReadEncodedInt();
+                        goto case 15;
+                    }
+                case 15:
+                case 14:
+                case 13:
+                case 12:
+                case 11:
+                    {
+                        if (version < 13)
+                        {
+                            List<Item> payed = reader.ReadStrongItemList();
+
+                            for (int i = 0; i < payed.Count; ++i)
+                                payed[i].PayedInsurance = true;
+                        }
+
+                        goto case 10;
+                    }
+                case 10:
+                    {
+                        if (reader.ReadBool())
+                        {
+                            m_HairModID = reader.ReadInt();
+                            m_HairModHue = reader.ReadInt();
+                            m_BeardModID = reader.ReadInt();
+                            m_BeardModHue = reader.ReadInt();
+                        }
+
+                        goto case 9;
+                    }
+                case 9:
+                    {
+                        SavagePaintExpiration = reader.ReadTimeSpan();
+
+                        if (SavagePaintExpiration > TimeSpan.Zero)
+                        {
+                            BodyMod = (Female ? 184 : 183);
+                            HueMod = 0;
+                        }
+
+                        goto case 8;
+                    }
+                case 8:
+                    {
+                        m_NpcGuild = (NpcGuild)reader.ReadInt();
+                        m_NpcGuildJoinTime = reader.ReadDateTime();
+                        m_NpcGuildGameTime = reader.ReadTimeSpan();
+                        goto case 7;
+                    }
+                case 7:
+                    {
+                        m_PermaFlags = reader.ReadStrongMobileList();
+                        goto case 6;
+                    }
+                case 6:
+                case 5:
+                case 4:
+                case 3:
+                case 2:
+                    {
+                        m_Flags = (PlayerFlag)reader.ReadInt();
+                        goto case 1;
+                    }
+                case 1:
+                    {
+                        m_LongTermElapse = reader.ReadTimeSpan();
+                        m_ShortTermElapse = reader.ReadTimeSpan();
+                        m_GameTime = reader.ReadTimeSpan();
+                        goto case 0;
+                    }
+                case 0:
+                    {
+                        break;
+                    }
 			}
 
 			if (m_RecentlyReported == null)
@@ -1964,26 +1701,6 @@ namespace Server.Mobiles
 			writer.Write( (int) 28 ); // version
 
 			writer.Write( (DateTime) m_PeacedUntil );
-			writer.Write( (DateTime) m_AnkhNextUse );
-			writer.Write( m_AutoStabled, true );
-
-			if( m_AcquiredRecipes == null )
-			{
-				writer.Write( (int)0 );
-			}
-			else
-			{
-				writer.Write( m_AcquiredRecipes.Count );
-
-				foreach( KeyValuePair<int, bool> kvp in m_AcquiredRecipes )
-				{
-					writer.Write( kvp.Key );
-					writer.Write( kvp.Value );
-				}
-			}
-
-			writer.WriteEncodedInt( m_ToTItemsTurnedIn );
-			writer.Write( m_ToTTotalMonsterFame );	//This ain't going to be a small #.
 
 			writer.WriteEncodedInt( m_AllianceMessageHue );
 			writer.WriteEncodedInt( m_GuildMessageHue );
@@ -2012,10 +1729,6 @@ namespace Server.Mobiles
 			writer.Write( (TimeSpan) m_NpcGuildGameTime );
 
 			writer.Write( m_PermaFlags, true );
-
-			writer.Write( NextTailorBulkOrder );
-
-			writer.Write( NextSmithBulkOrder );
 
 			writer.Write( (int) m_Flags );
 
@@ -2373,59 +2086,6 @@ namespace Server.Mobiles
 					m_SpeechLog = new SpeechLog();
 
 				m_SpeechLog.Add( e.Mobile, e.Speech );
-			}
-		}
-
-		#endregion
-
-		#region Recipes
-
-		private Dictionary<int, bool> m_AcquiredRecipes;
-
-		public virtual bool HasRecipe( Recipe r )
-		{
-			if( r == null )
-				return false;
-
-			return HasRecipe( r.ID );
-		}
-
-		public virtual bool HasRecipe( int recipeID )
-		{
-			if( m_AcquiredRecipes != null && m_AcquiredRecipes.ContainsKey( recipeID ) )
-				return m_AcquiredRecipes[recipeID];
-
-			return false;
-		}
-
-		public virtual void AcquireRecipe( Recipe r )
-		{
-			if( r != null )
-				AcquireRecipe( r.ID );
-		}
-
-		public virtual void AcquireRecipe( int recipeID )
-		{
-			if( m_AcquiredRecipes == null )
-				m_AcquiredRecipes = new Dictionary<int, bool>();
-
-			m_AcquiredRecipes[recipeID] = true;
-		}
-
-		public virtual void ResetRecipes()
-		{
-			m_AcquiredRecipes = null;
-		}
-
-		[CommandProperty( AccessLevel.GameMaster )]
-		public int KnownRecipes
-		{
-			get
-			{
-				if( m_AcquiredRecipes == null )
-					return 0;
-
-				return m_AcquiredRecipes.Count;
 			}
 		}
 

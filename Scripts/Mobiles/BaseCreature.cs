@@ -1129,10 +1129,6 @@ namespace Server.Mobiles
 					CheckDistracted( from );
 				}
 			}
-			else if( from is PlayerMobile )
-			{
-				Timer.DelayCall( TimeSpan.FromSeconds( 10 ), new TimerCallback( ( ( PlayerMobile )from ).RecoverAmmo ) );
-			}
 
 			base.OnDamage( amount, from, willKill );
 		}
@@ -2185,8 +2181,6 @@ namespace Server.Mobiles
 				if( m_ControlMaster is PlayerMobile )
 				{
 					((PlayerMobile)m_ControlMaster).AllFollowers.Remove( this );
-					if( ((PlayerMobile)m_ControlMaster).AutoStabled.Contains( this ) )
-						((PlayerMobile)m_ControlMaster).AutoStabled.Remove( this );
 				}
 			}
 			else if ( m_SummonMaster != null )

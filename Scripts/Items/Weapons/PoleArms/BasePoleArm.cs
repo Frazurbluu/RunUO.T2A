@@ -53,14 +53,6 @@ namespace Server.Items
 				from.SendLocalizedMessage( 1042001 ); // That must be in your pack for you to use it.
 		}
 
-		public override void GetContextMenuEntries( Mobile from, List<ContextMenuEntry> list )
-		{
-			base.GetContextMenuEntries( from, list );
-
-			if ( HarvestSystem != null )
-				BaseHarvestTool.AddContextMenuEntries( from, this, list, HarvestSystem );
-		}
-
 		public override void Serialize( GenericWriter writer )
 		{
 			base.Serialize( writer );

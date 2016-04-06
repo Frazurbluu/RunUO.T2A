@@ -24,13 +24,6 @@ namespace Server.Items
 				Fishing.System.BeginHarvesting( from, this );
 		}
 
-		public override void GetContextMenuEntries( Mobile from, List<ContextMenuEntry> list )
-		{
-			base.GetContextMenuEntries( from, list );
-
-			BaseHarvestTool.AddContextMenuEntries( from, this, list, Fishing.System );
-		}
-
 		public override bool CheckConflictingLayer( Mobile m, Item item, Layer layer )
 		{
 			if ( base.CheckConflictingLayer( m, item, layer ) )
