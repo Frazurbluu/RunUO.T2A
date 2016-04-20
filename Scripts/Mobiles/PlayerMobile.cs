@@ -1262,24 +1262,6 @@ namespace Server.Mobiles
             return base.OnBeforeDeath();
         }
 
-        public override DeathMoveResult GetParentMoveResultFor(Item item)
-        {
-            // It seems all items are unmarked on death, even blessed/insured ones
-            if (item.QuestItem)
-                item.QuestItem = false;
-
-            return GetParentMoveResultFor(item);
-        }
-
-        public override DeathMoveResult GetInventoryMoveResultFor(Item item)
-        {
-            // It seems all items are unmarked on death, even blessed/insured ones
-            if (item.QuestItem)
-                item.QuestItem = false;
-
-            return GetInventoryMoveResultFor(item);
-        }
-
         public override void OnDeath(Container c)
         {
             base.OnDeath(c);
